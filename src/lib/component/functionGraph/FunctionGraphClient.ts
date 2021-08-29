@@ -1,17 +1,11 @@
 import { CreateFunctionRequest } from "./model/CreateFunctionRequest";
-import { CreateFunctionResponse } from "./model/CreateFunctionResponse";
 import { GetFunctionListRequest } from "./model/GetFunctionListRequest";
-import { GetFunctionListResponse } from "./model/GetFunctionListResponse";
 import { UpdateFunctionRequest } from "./model/UpdateFunctionRequest";
-import { UpdateFunctionResponse } from "./model/UpdateFunctionResponse";
 import { DeleteFunctionRequest } from "./model/DeleteFunctionRequest";
-import { UpdateFunctionConfigRequestBody } from "./model/UpdateFunctionConfigRequestBody";
 import { UpdateFunctionConfigRequest } from "./model/UpdateFunctionConfigRequest";
-import { CreateTriggerRequestBody } from "./model/CreateTriggerRequestBody";
 import { CreateTriggerRequest } from "./model/CreateTriggerRequest";
 import { UpdateTriggerRequest } from "./model/UpdateTriggerRequest";
 import { DeleteTriggerRequest } from "./model/DeleteTriggerRequest";
-import { Func } from "mocha";
 import { ListTriggerRequest } from "./model/ListTriggerRequest";
 var axios = require('axios');
 
@@ -348,8 +342,7 @@ export const ParamCreater = function () {
                 headers: {"Content-Type": "application/json"},
                 data: ""
             };
-            const localVarQueryParameter = {} as any;
-            let pkg;
+            let pkg: any;
             if(getFunctionListRequest !== null && getFunctionListRequest !== undefined) {
                 if (getFunctionListRequest instanceof GetFunctionListRequest) {
                     pkg = getFunctionListRequest.package;
@@ -358,7 +351,7 @@ export const ParamCreater = function () {
                 }
             }
             if (pkg !== null && pkg !== undefined) {
-                options.url = options.url + `?package=${pkg}`
+                options.url = options.url + `?package_name=${pkg}`
             }
             options.headers = sign(options, client);
             return options;

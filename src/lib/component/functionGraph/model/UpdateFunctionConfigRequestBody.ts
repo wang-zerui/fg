@@ -1,10 +1,16 @@
 
-export interface InputProps {
+export interface FunctionConfigProps {
     func_name: string;
     handler: string;
     memory_size: number;
     timeout: number;
     runtime: string;
+    description?: string;
+    enterprise_project_id?: string;
+    xrole?:string;
+    app_xrole?: string;
+    initializer_handler?: string;
+    initializer_timeout?: string;
 }
 
 export class UpdateFunctionConfigRequestBody {
@@ -19,7 +25,7 @@ export class UpdateFunctionConfigRequestBody {
     public app_xrole?: string;
     public initializer_handler?: string;
     public initializer_timeout?: string;
-    public constructor(input: InputProps){
+    public constructor(input: FunctionConfigProps){
         this['func_name'] = input.func_name;
         this['handler'] = input.handler;
         this['memory_size'] = input.memory_size;
@@ -64,6 +70,10 @@ export class UpdateFunctionConfigRequestBody {
     }
     public withInitializerTimeout(initializer_timeout: string): UpdateFunctionConfigRequestBody{
         this['initializer_timeout'] = initializer_timeout;
+        return this;
+    }
+    public withDescription(des: string): UpdateFunctionConfigRequestBody{
+        this['description'] = des;
         return this;
     }
 }

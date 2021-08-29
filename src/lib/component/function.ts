@@ -2,7 +2,6 @@
 import * as core from '@serverless-devs/core';
 import { ICredentials } from '../interface/profile';
 import Client from '../client';
-import get from 'lodash.get';
 import { startZip, tableShow, deleteZip } from '../utils';
 import logger from '../../common/logger';
 import { CreateFunctionRequest } from './functionGraph/model/CreateFunctionRequest';
@@ -11,21 +10,12 @@ import { FUNCTION_INFO_KEYS } from './functionGraph/model/FunctionInfo'
 import { UpdateFunctionConfigRequestBody } from './functionGraph/model/UpdateFunctionConfigRequestBody';
 import { UpdateFunctionRequestBody } from './functionGraph/model/UpdateFunctionRequestBody';
 import { UpdateFunctionRequest } from './functionGraph/model/UpdateFunctionRequest';
+import { GetFunctionListRequest } from './functionGraph/model/GetFunctionListRequest';
+import { UpdateFunctionConfigRequest } from './functionGraph/model/UpdateFunctionConfigRequest';
 let CONFIGS = require('../config');
 
-// const FUNCTION_COMMAND: string[] = ['create', 'list', 'info', 'remove', 'updateCode', 'updateConfig', 'getConfig'];
-// const FUNCTION_COMMAND_HELP_KEY = {
-//   create: 'FunctionCreateInputsArgs',
-//   list: 'FunctionListInputsArgs',
-//   info: 'FunctionInfoInputsArgs',
-//   remove: 'FunctionDeleteInputsArgs',
-//   updateCode: 'UpdateCodeInputsArgs',
-//   updateConfig: 'UpdateCofigInputsArgs',
-//   getConfig: 'GetConfigInputsArgs',
-// };
-
 export default class Function {
-  constructor({ endpoint, credentials, projectId }: { endpoint: string; credentials: ICredentials; projectId: string }) {
+  public constructor({ endpoint, credentials, projectId }: { endpoint: string; credentials: ICredentials; projectId: string }) {
     Client.setFgClient(credentials, projectId, endpoint);
   }
 
@@ -35,25 +25,41 @@ export default class Function {
    * @returns res
    * @returns functionBrn
    */
-  async create(props) {
+  public async create(props) {
 
     const vm1 = core.spinner('File compressing...');
     const ZipFile = await startZip(props.code.codeUri || './')
     await deleteZip('hello.zip');
     vm1.succeed('File compression completed');
 
-    const body = new CreateFunctionRequestBody({
+    let body = new CreateFunctionRequestBody({
       func_name: props.functionName || CONFIGS.functionName,
-      handler: props.description || CONFIGS.description,
-      memory_size: props.memory_size || CONFIGS.memory_size,
+      handler: props.handler || CONFIGS.handler,
+      memory_size: props.memory_size || CONFIGS.memorySize,
       timeout: props.timeout || CONFIGS.timeout,
       runtime: props.runtime || CONFIGS.handler(props.runtime),
       pkg: props.package || CONFIGS.pkg,
-      code_type: props.code_type || CONFIGS.code_type,
+      code_type: props.code_type || CONFIGS.codeType,
     })
     .withFunctionCode(ZipFile)
 
+    if ( props.enterpriseProjectId ) {
+      body = body.withEnterpriseProjectId(props.enterprise_project_id);
+    }
+    if (props.appXrole) {
+      body = body.withAppXrole(props.appXrole);
+    }
+    if ( props.initializerHandler ) {
+      body = body.withInitializerHandler(props.initializerHandler);
+    }
+    if ( props.initializerTimeout ) {
+      body = body.withInitializerTimeout(props.initializerTimeout);
+    }
+    if ( props.description ) {
+      body = body.withDescription(props.description);
+    }
     const vm = core.spinner(`Function ${props.functionName} creating.`);
+
     const response = await Client.fgClient.createFunction(new CreateFunctionRequest()
       .withBody(body));
     
@@ -65,11 +71,7 @@ export default class Function {
       // 错误码说明 https://support.huaweicloud.com/api-functiongraph/ErrorCode.html
       throw new Error(JSON.stringify(response.data));
     }
-    return this.handleResponse(response);
 
-    // 处理返回
-    // res返回response.body
-    // 返回funcitonBrn用于创建触发器
     return this.handleResponse(response);
   }
 
@@ -79,7 +81,7 @@ export default class Function {
    * @returns res
    * @returns functionBrn
    */
-  async updateCode(props) {
+  public async updateCode(props) {
 
     const functionName = props.functionName;
     if (!functionName) {
@@ -103,13 +105,13 @@ export default class Function {
     const response = await Client.fgClient
       .updateFunction(updateFunctionReqeust)
 
-    if( response.status === 200 ){
-      vm2.succeed(`Function ${props.functionName} updated.`);
-    }else{
+    if( response.status !== 200 ){
       vm2.fail(`Function ${props.functionName} updating failed.`);
       // TODO:使用更友好的错误返回
       // 错误码说明 https://support.huaweicloud.com/api-functiongraph/ErrorCode.html
       throw new Error(JSON.stringify(response.data));
+    }else{
+      vm2.succeed(`Function ${props.functionName} updated.`);
     }
     return this.handleResponse(response);
   }
@@ -120,32 +122,52 @@ export default class Function {
    * @returns res
    * @returns functionBrn
    */
-  async updateConfig(props) {
+  public async updateConfig(props) {
     const vm = core.spinner('Function configuration updating...');
+    
     const FunctionName = props.functionName;
     if (!FunctionName) {
       throw new Error('FunctionName not found.');
     }
 
-    const keys = ['Description', 'Timeout', 'Handler', 'Runtime', 'Environment'];
-    let body = {};
-    for (let i of keys) {
-      let value = get(props, i.toLowerCase());
-      if (value) {
-        body[i] = value;
-      }
+    let body = new UpdateFunctionConfigRequestBody({
+      func_name: props.functionName,
+      handler: props.handler,
+      memory_size: props.memorySize,
+      timeout: props.timeout,
+      runtime: props.runtime,
+    })
+    if ( props.enterpriseProjectId ) {
+      body = body.withEnterpriseProjectId(props.enterprise_project_id);
+    }
+    if ( props.xrole ) {
+      body = body.withXrole(props.xrole);
+    }
+    if (props.appXrole) {
+      body = body.withAppXrole(props.appXrole);
+    }
+    if ( props.initializerHandler ) {
+      body = body.withInitializerHandler(props.initializerHandler);
+    }
+    if ( props.initializerTimeout ) {
+      body = body.withInitializerTimeout(props.initializerTimeout);
+    }
+    if ( props.description ) {
+      body = body.withDescription(props.description);
     }
 
-    const response = await Client.cfcClient
-      .updateFunctionConfiguration(FunctionName, body)
-      .then(function (response) {
-        vm.succeed('Function configuration update completed');
-        return response;
-      })
-      .catch(function (err) {
-        vm.fail('Function configuration update failed');
-        throw new Error(err.message.Message);
-      });
+    const response = await Client.fgClient
+      .updateFunctionConfig(new UpdateFunctionConfigRequest()
+        .withBody(body));
+    
+    if( response.status !== 200 ){
+      vm.fail(`Function ${props.functionName} configuration updating failed.`);
+      // TODO:使用更友好的错误返回
+      // 错误码说明 https://support.huaweicloud.com/api-functiongraph/ErrorCode.html
+      throw new Error(JSON.stringify(response.data));
+    }else{
+      vm.succeed(`Function ${props.functionName} configuration updated.`);
+    }
 
     // 处理返回
     // res返回response.body
@@ -153,76 +175,39 @@ export default class Function {
     return this.handleResponse(response);
   }
 
-  async info(props) {
-    const FunctionName = props.functionName;
-    if (!FunctionName) {
-      throw new Error('Not found functionName');
+  public async list( pkg:string="default", table?: boolean): Promise<any> {
+    const data = await Client.fgClient
+      .getFunctionList(new GetFunctionListRequest()
+        .withPackage(pkg))
+    if(data.status !== 200){
+      logger.debug("获取函数列表错误");
+      throw new Error("Getting function list error")
     }
-    return await Client.cfcClient
-      .getFunction(FunctionName)
-      .then((response) => {
-        return response.body;
-      })
-      .catch((err) => {
-        logger.error('获取函数信息失败');
-        logger.error(err.body);
-      });
-  }
-
-  async list(table?: boolean): Promise<any> {
-    const data = await Client.cfcClient
-      .listFunctions()
-      .then((response) => {
-        return response.body.Functions;
-      })
-      .catch((err) => {
-        logger.info(err);
-        logger.debug(`${err}`);
-        throw new Error(err.message.Message);
-      });
     if (table) {
-      tableShow(data, ['FunctionName', 'Description', 'UpdatedAt', 'LastModified', 'Region']);
-      return data;
+      tableShow(data.functions, ['FunctionName', 'Description', 'UpdatedAt', 'LastModified', 'Region']);
+      return data.functions;
     } else {
-      return data;
+      return data.functions;
     }
   }
 
-  async remove(FunctionName) {
-    if (!FunctionName) {
-      throw new Error('Not found functionName');
+  public async remove(functionUrn: string) {
+    const vm = core.spinner(`Function ${functionUrn} deleting...`);
+    
+    const response = await Client.fgClient
+      .deleteFunction(functionUrn)
+    
+    if ( response.status !== 200 ) {
+      vm.fail("Function delete failed.");
+      logger.debug(JSON.stringify(response));
+      throw new Error(JSON.stringify(response.data))
+    } else {
+      logger.debug(JSON.stringify(response));
+      vm.succeed(`Function ${functionUrn} deleted.`);
     }
-    const vm = core.spinner('Function ' + FunctionName + ' deleting...');
-    return await Client.cfcClient
-      .deleteFunction(FunctionName)
-      .then((response) => {
-        vm.succeed(`Function ${FunctionName} deleted`);
-        return response;
-      })
-      .catch((err) => {
-        vm.fail('Function delete failed.');
-        logger.error('Function remove failed. ');
-        logger.debug(JSON.stringify(err));
-        throw new Error(err.message.Message);
-      });
+    return response;
   }
 
-  async getConfig(props) {
-    const FunctionName = props.functionName;
-    if (!FunctionName) {
-      throw new Error('Not found functionName');
-    }
-    await Client.cfcClient
-      .getFunctionConfiguration(FunctionName)
-      .then((response) => {
-        logger.info(response.body);
-        return response.body;
-      })
-      .catch((err) => {
-        logger.error('函数配置获取错误');
-        logger.error(err.message.Message);
-      });
-  }
 
   /**
    * 一些衍生方法
@@ -231,12 +216,13 @@ export default class Function {
   /**
    * Check function existance
    */
-  async check(functionName) {
+  public async check(functionName: string, pkg?: string) {
+    logger.debug("Checking function exists.");
     const vm = core.spinner('Checking if ' + functionName + ' exits...');
     const functions = await this.list();
     let isCreated = false;
     for (let i = 0; i < functions.length; i++) {
-      if (functions[i].FunctionName === functionName) {
+      if (functions[i].func_name === functionName) {
         isCreated = true;
         break;
       }
@@ -249,21 +235,29 @@ export default class Function {
     return isCreated;
   }
 
-  async getBrnByFunctionName(functionName) {
-    const FunctionName = functionName;
-    logger.debug('Get functionBrn by function name:' + FunctionName);
-    let functionBrn = await Client.cfcClient
-      .getFunction(FunctionName)
-      .then(function (response) {
-        return response.body.Configuration.FunctionBrn;
-      })
-      .catch(function (err) {
-        logger.error('Getting functionBrn failed!');
-        throw new Error(err.message.Message);
-      });
-    return functionBrn;
+  /**
+   * 使用函数名获得func_urn
+   * @param functionName 
+   * @param pkg 
+   * @returns 
+   */
+  public async getUrnByFunctionName(functionName, pkg:string="default"):Promise<string> {
+    logger.debug('Get functionBrn by function name:' + functionName);
+    const functions  = await this.list(pkg=pkg);
+    for(let functionInfo of functions){
+      if ( functionInfo.func_name === functionName ) {
+        return functionInfo.func_urn;
+      }
+    }
+    throw new Error("Function not found.");
   }
 
+  /**
+   * 处理函数信息输出
+   * @param response 
+   * @returns 
+   */
+  public 
   async handleResponse(response: any) {
     logger.debug(`${response}`);
     let content = [];

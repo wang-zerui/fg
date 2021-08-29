@@ -1,15 +1,15 @@
-# 百度云函数计算（CFC）组件
+# 华为云函数计算（FG）组件
 
 ## 组件说明
 
-[百度云函数组件](https://github.com/xinwuyun/cfc)是一个用于支持百度云函数应用生性周期的工具，基于[Serverless Devs](https://www.serverless-devs.com/)进行开发，通过配置资源配置文件`s.yaml`，您可以简单快速地部署应用到[百度云函数计算平台](https://console.bce.baidu.com/cfc/#/cfc/overview)。
+[华为云函数组件](https://github.com/xinwuyun/fg)是一个用于支持华为云函数应用生性周期的工具，基于[Serverless Devs](https://www.serverless-devs.com/)进行开发，通过配置资源配置文件`s.yaml`，您可以简单快速地部署应用到[华为云函数计算平台](https://console.huaweicloud.com/functiongraph/#/serverless/dashboard)。
 
 本组件使用[YAML规范](./docs/Others/yaml.md)（`s.yaml`）定义Serverless资源，定义了您的应用的函数、触发器等资源的配置。
 
 ## 快速开始
 
 ```shell
-$ git clone https://github.com/xinwuyun/cfc
+$ git clone https://github.com/xinwuyun/fg
 $ cd cfc/example
 $ s deploy
 ```
@@ -28,9 +28,14 @@ $ s deploy
 
 ## 更多案例
 
-[start-cfc](https://github.com/xinwuyun/start-cfc)
+[start-cfc](https://github.com/xinwuyun/start-fg)
 
 ## 问题反馈
 
-如您在使用中遇到问题，可以在[这里反馈](https://github.com/xinwuyun/cfc/issues)
+如您在使用中遇到问题，可以在[这里反馈](https://github.com/xinwuyun/fg/issues)
 
+## TODO
++ [x] 完成`function.ts`
++ [ ] 完成`trigger.ts`
++ [ ] 完成`deploy.ts`
++ [ ] 完成`remove.ts`

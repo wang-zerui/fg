@@ -19,8 +19,8 @@ export interface FunctionInfoInputInterface {
     enterprise_project_id?: string;
 }
 
-export const FUNCTION_INFO_KEYS = ['func_urn', 'func_name', 'domain_id', 'namespace', 'project_name', 'pkg', 'runtime', 'timeout', 
-'handler', 'memory_size', 'cpu', 'code_type', 'code_filename', 'code_size', 'digest', 'version', 'image_name', 'eenterprise_project_id'];
+export const FUNCTION_INFO_KEYS = ['func_urn', 'func_name', 'project_name', 'pkg', 'runtime', 'timeout', 
+'handler', 'memory_size', 'cpu', 'code_size', 'digest', 'version', 'image_name', 'enterprise_project_id'];
 
 export class FunctionInfo {
     public func_urn?: string;
