@@ -11,13 +11,16 @@ const CONFIGS = {
   compName: 'fg',
   compFullname: 'FunctionGraph',
   functionName: 'ServerlessDevsFunction',
+  handler: 'index.handler',
   codeUri: './',
   timeout: 3,
   memorySize: 128,
-  description(app) {
+  description(app:string = 'serverless devs') {
     return `This is a function in ${app} application`;
   },
-  dashBoardUrl: "https://console.huaweicloud.com/functiongraph/#/serverless/dashboard"
+  codeType: 'zip',
+  pkg: 'default',
+  dashBoardUrl: 'https://console.huaweicloud.com/functiongraph/#/serverless/dashboard'
 };
 
 module.exports = CONFIGS;

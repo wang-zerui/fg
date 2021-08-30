@@ -39,3 +39,7 @@ $ s deploy
 + [ ] 完成`trigger.ts`
 + [ ] 完成`deploy.ts`
 + [ ] 完成`remove.ts`
+
+## 感觉
+
+感觉应该按照面向对象全重写一遍

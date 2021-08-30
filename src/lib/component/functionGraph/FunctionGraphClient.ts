@@ -55,7 +55,7 @@ export class FunctionGraphClient {
         const options = ParamCreater().createFunction(createFunctionRequest, this);
         return await axios(options)
             .then((res:any)=>{
-                return res.data;
+                return {status: 200, data:res.data};
             })
             .catch((err:any) => {
                 const res = {
@@ -76,7 +76,7 @@ export class FunctionGraphClient {
         const options = ParamCreater().updateFunction(updateFuncionRequest, this);
         return await axios(options)
             .then((res:any)=>{
-                return res.data;
+                return {status: 200, data:res.data};
             })
             .catch((err:any) => {
                 const res = {
@@ -98,7 +98,7 @@ export class FunctionGraphClient {
         const options = ParamCreater().updateFunctionConfig(updateFunctionConfigRequest, this);    
         return await axios(options)
             .then((res:any)=>{
-                return res.data;
+                return {status: 200, data:res.data};
             })
             .catch((err:any) => {
                 const res = {
@@ -119,7 +119,7 @@ export class FunctionGraphClient {
         const options = ParamCreater().deleteFunction(deleteFunctionRequest, this);
         return await axios(options)
             .then((res:any)=>{
-                return res.data;
+                return {status: 200, data:res.data};
             })
             .catch((err:any) => {
                 const res = {
@@ -141,7 +141,7 @@ export class FunctionGraphClient {
         const options = ParamCreater().getFunctionList(getFunctionListRequest, this);
         return await axios(options)
             .then((res:any)=>{
-                return res.data;
+                return {status: 200, data:res.data};
             })
             .catch((err:any) => {
                 const res = {
@@ -163,7 +163,7 @@ export class FunctionGraphClient {
         const options = ParamCreater().createTrigger(createTriggerRequest, this);
         return await axios(options)
             .then((res:any)=>{
-                return res.data;
+                return {status: 200, data:res.data};
             })
             .catch((err:any) => {
                 const res = {
@@ -180,7 +180,7 @@ export class FunctionGraphClient {
         const options = ParamCreater().updateTrigger(updateTriggerRequest, this);
         return await axios(options)
             .then((res:any)=>{
-                return res.data;
+                return {status: 200, data:res.data};
             })
             .catch((err:any) => {
                 const res = {
@@ -197,7 +197,7 @@ export class FunctionGraphClient {
         const options = ParamCreater().deleteTrigger(deleteTriggerRequest, this);
         return await axios(options)
             .then((res:any)=>{
-                return res.data;
+                return {status: 200, data:res.data};
             })
             .catch((err:any) => {
                 const res = {
@@ -214,7 +214,7 @@ export class FunctionGraphClient {
         const options = ParamCreater().listTrigger(listTriggerRequest, this);
         return await axios(options)
             .then((res:any)=>{
-                return res.data;
+                return {status: 200, data:res.data};
             })
             .catch((err:any) => {
                 const res = {

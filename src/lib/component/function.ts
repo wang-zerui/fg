@@ -72,7 +72,7 @@ export default class Function {
       throw new Error(JSON.stringify(response.data));
     }
 
-    return this.handleResponse(response);
+    return this.handleResponse(response.data);
   }
 
   /**
@@ -113,7 +113,7 @@ export default class Function {
     }else{
       vm2.succeed(`Function ${props.functionName} updated.`);
     }
-    return this.handleResponse(response);
+    return this.handleResponse(response.data);
   }
 
   /**
@@ -172,7 +172,7 @@ export default class Function {
     // 处理返回
     // res返回response.body
     // 返回funcitonBrn用于创建触发器
-    return this.handleResponse(response);
+    return this.handleResponse(response.data);
   }
 
   public async list( pkg:string="default", table?: boolean): Promise<any> {
@@ -257,8 +257,7 @@ export default class Function {
    * @param response 
    * @returns 
    */
-  public 
-  async handleResponse(response: any) {
+  public async handleResponse(response: any) {
     logger.debug(`${response}`);
     let content = [];
     for (let i of FUNCTION_INFO_KEYS) {

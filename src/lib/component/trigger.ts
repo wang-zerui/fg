@@ -1,334 +1,454 @@
-import * as core from '@serverless-devs/core';
-import { ICredentials } from '../interface/profile';
-import Client from '../client';
-import { tableShow } from '../utils';
-import logger from '../../common/logger';
-import get from 'lodash.get';
+import { FunctionGraphClient } from "./functionGraph/FunctionGraphClient";
+import { CreateTriggerRequest } from "./functionGraph/model/CreateTriggerRequest";
+import { CreateTriggerRequestBody } from "./functionGraph/model/CreateTriggerRequestBody";
+import { ListTriggerRequest } from "./functionGraph/model/ListTriggerRequest";
+import { UpdateTriggerRequest } from "./functionGraph/model/UpdateTriggerRequest";
+import { UpdateTriggerRequestBody } from "./functionGraph/model/UpdateTriggerRequestBody";
 
-interface IProps {
-  target: string;
-  source: string;
-  relationId?: string;
-  data?: object;
-  functionName?: string;
+abstract class Trigger {
+    public triggerId?: string;
+    public triggerTypeCode: string;
+    public eventTypeCode: string;
+    public status: string;
+    public functionUrn: string;
+    static TRIGGER_TYPE_CODES = ['SMN', 'APIG', 'OBS', 'TIMER', 'DMS', 'DIS', 'LTS', 'DDS', 'CTS', 'kafka'];
+    static STATUSES = ['ACTIVE', 'DISABLED'];
+    public constructor(triggerTypeCode: string, eventTypeCode: string, status: string, functionUrn: string){
+        this['triggerTypeCode'] = triggerTypeCode;
+        this['status'] = status;
+        this['eventTypeCode'] = eventTypeCode;
+        this['functionUrn'] = functionUrn;
+    }
+    abstract getEventData():object;
+
+    /**
+     * 创建触发器
+     * @param client FunctionGraphClient
+     * @param functionUrn 函数代号
+     * @returns 
+     */
+    public async create(client:FunctionGraphClient): Promise<any> {
+        const body = new CreateTriggerRequestBody()
+            .withTriggerTypeCode(this.triggerTypeCode)
+            .withTriggerStatus(this.status)
+            .withEventTypeCode(this.eventTypeCode)
+            .withEventData(this.getEventData)
+        
+        const response = await client.createTrigger(new CreateTriggerRequest()
+            .withFunctionUrn(this.functionUrn)
+            .withBody(body))
+        if ( response.status !== 200 ) {
+            throw new Error(JSON.stringify(response.data));
+        }else{
+            return this.handleResponse(response.data);
+        }
+    }
+
+    /**
+     * 获取触发器列表
+     * @param client 
+     * @param functionUrn 
+     * @returns 
+     */
+    public async list(client: FunctionGraphClient): Promise<Array<any>> {
+        const response = await client.listTrigger(new ListTriggerRequest()
+            .withFunctionUrn(this.functionUrn))
+        if (response.status !== 200 ){
+            throw new Error(JSON.stringify(response.data));
+        }else{
+            return response.data;
+        }
+    }
+
+    /**
+     * 更新触发器
+     * @param Client
+     * @param functionUrn
+     * @returns 
+     */
+    //@ts-ignore
+    private async update(client: FunctionGraphClient): Promise<any> {
+        const body = new UpdateTriggerRequestBody()
+            .withTriggerStatus(this.status);
+        
+        const response = await client.updateTrigger(new UpdateTriggerRequest()
+            .withTriggerId(await this.getTriggerId(client))
+            .withFunctionUrn(this.functionUrn)
+            .withTriggerTypeCode(this.triggerTypeCode)
+            .withBody(body))
+        if (response.status !== 200 ){
+            throw new Error(JSON.stringify(response.data));
+        }else{
+            return response.data;
+        }
+    }
+    
+    public async remove(client: FunctionGraphClient): Promise<any> {
+        
+    }
+
+
+    abstract getTriggerId(client: FunctionGraphClient): Promise<string>;
+
+    /**
+     * 处理返回
+     * @param response 
+     * @returns 
+     */
+    public handleResponse(response){
+        let triggerInfo = [
+            {
+                desc: "TriggerId",
+                example: response.trigger_id
+            },
+            {
+                desc: "TriggerTypeCode",
+                example: response.trigger_type_code
+            },
+            {
+                desc: "TriggerStatus",
+                example: response.trigger_status
+            }
+        ];
+        let eventDataInfo = [];
+        for (let key of Object.keys(response.event_data)){
+            eventDataInfo.push({
+                desc: key,
+                example: response.event_data[key]
+            })
+        }
+        return [
+            {
+                header: 'Trigger',
+                content: triggerInfo
+            },
+            {
+                header: 'Trigger event data',
+                content: eventDataInfo
+            }
+        ]
+    }
 }
 
-const SOURCE_TYPES = ['dueros', 'duedge', 'bos', 'cfc-http-trigger/v1/CFCAPI', 'cdn', 'cfc-crontab-trigger/v1/'];
-const DATAKEYS = {
-  duedeg: [],
-  bos: ['Resource', 'Status', 'EventType', 'Name'],
-  cdn: ['EventType', 'Status'],
-  'cfc-http-trigger/v1/CFCAPI': ['Method'],
-  'cfc-crontab-trigger/v1/': ['Name', 'ScheduleExpression'],
-};
-const cdnEventTypes = [
-  'CachedObjectsBlocked',
-  'CachedObjectsPushed',
-  'CachedObjectsRefreshed',
-  'CdnDomainCreated',
-  'CdnDomainDeleted',
-  'LogFileCreated',
-  'CdnDomainStarted',
-  'CdnDomainStopped',
-];
-const cdnStatus = ['enabled', 'disabled'];
-// const TRIGGER_COMMAND: string[] = ['create', 'list', 'info', 'remove', 'updateCode', 'updateConfig', 'getConfig'];
-// const TRIGGER_COMMAND_HELP_KEY = {
-//   create: 'FunctionCreateInputsArgs',
-//   list: 'FunctionListInputsArgs',
-//   info: 'FunctionInfoInputsArgs',
-//   remove: 'FunctionDeleteInputsArgs',
-//   updateCode: 'UpdateCodeInputsArgs',
-//   updateConfig: 'UpdateCofigInputsArgs',
-//   getConfig: 'GetConfigInputsArgs',
-// };
+interface SMNEventData {
+    topicUrn: string, //SMN服务的topic_urn，创建时必填。唯一
+    subscriptionStatus: string //topic_urn的订阅状态：Unconfirmed / Confirmed。
+}
 
-export default class Trigger {
-  constructor(credentials: ICredentials) {
-    Client.setCfcClient(credentials);
-  }
+interface CTSEventData {
+    name: string,
+    operations: string
+}
 
-  async getBrnByFunctionName(functionName) {
-    const vm = core.spinner('Getting functionBrn...');
-    return await Client.cfcClient
-      .getFunction(functionName)
-      .then(function (response) {
-        vm.succeed('Get functionBrn successfully.');
-        const funcitonBrn = response.body.Configuration.FunctionBrn;
-        logger.info(`FunctionBrn: ${funcitonBrn}`);
-        return funcitonBrn;
-      })
-      .catch(function (err) {
-        vm.fail('Fail to get functionBrn');
-        throw new Error(err.message.Message);
-      });
-  }
+interface DDSEventData {
+    instanceId: string,
+    collectionName: string,
+    dbName: string,
+    dbPassword: string,
+    batchSize: Array<string>
+}
 
-  async handleData(source: string, data: any) {
-    const keys = Object.keys(data);
-    if (source.slice(0, 3) === 'bos') {
-      source = source.slice(0, 3);
+interface KAFKAEventData {
+    instance_id: string,
+	db_name: string,
+    collection_name: string,
+    db_user: string,
+	db_password: string,
+    batch_size: number,
+}
+
+export class TriggerSMN extends Trigger{
+    public eventData: SMNEventData;
+
+    public constructor(triggerTypeCode: string, eventTypeCode: string, status: string, functionUrn: string, eventData: SMNEventData) {
+        super(triggerTypeCode, eventTypeCode, status, functionUrn);
+        this['eventData'] = eventData;
     }
-    const minKeys = get(DATAKEYS, source);
-    let missingKeys = [];
-    for (let key of minKeys) {
-      if (!keys.includes(key)) {
-        missingKeys.push(key);
-      }
+    
+    public getEventData():object {
+        return this.eventData;
     }
 
-    if (missingKeys.length > 0) {
-      throw new Error(`Missing trigger data: ${missingKeys}.`);
-    }
-
-    if (source === 'cdn') {
-      if (!cdnEventTypes.includes(data.EventType)) {
-        throw new Error(`CDN event type ${data.EventType} is not valid.`);
-      }
-      if (!cdnStatus.includes(data.Status)) {
-        throw new Error(`CDN status error: ${data.Status}.`);
-      }
-    }
-    return data;
-  }
-
-  async create(props: IProps) {
-    const Target = props.target;
-    const Source = props.source;
-    const Data = await this.handleData(Source, props.data);
-    let body = {
-      Target,
-      Source,
-      Data,
-    };
-    logger.info(`Trigger infomation:`);
-    logger.info(`Target:${Target}`);
-    logger.info(`Source:${Source}`);
-    logger.info(`Data:${JSON.stringify(Data)}`);
-    const vm = core.spinner('Trigger creating...');
-    logger.debug(`${body}`);
-    const triggerInfo = await Client.cfcClient
-      .createRelation(body)
-      .then(function (response) {
-        vm.succeed('Trigger created.');
-        logger.debug(`Creating trigger response: ${JSON.stringify(response.body)}`);
-        return response.body.Relation;
-      })
-      .catch(function (err) {
-        vm.fail(`Trigger creating failed.`);
-        logger.debug(`Error: ${JSON.stringify(err)}`);
-        throw new Error(err.message.Message);
-      });
-    return await this.handleResponse(triggerInfo, props.functionName);
-  }
-
-  async update(props: IProps) {
-    logger.debug(`RelationId: ${props.relationId}`);
-    const Target = props.target;
-    const RelationId = props.relationId;
-    const Source = props.source;
-    const Data = await this.handleData(Source, props.data);
-    if (!RelationId) {
-      throw new Error('No relationId(triggerId) provided');
-    }
-    logger.info(`Trigger target:${Target}`);
-    logger.info(`Trigger source:${Source}`);
-    logger.info(`Trigger data:${JSON.stringify(Data)}`);
-
-    const vm = core.spinner('Trigger updating...');
-    const triggerInfo = await Client.cfcClient
-      .updateRelation({
-        Target,
-        RelationId,
-        Source,
-        Data,
-      })
-      .then((response) => {
-        vm.succeed('Trigger updated.');
-        return response.body.Relation;
-      })
-      .catch((err) => {
-        vm.fail('Trigger update failed');
-        logger.debug(`Error: ${JSON.stringify(err)}`);
-        throw new Error(err.message.Message);
-      });
-    return await this.handleResponse(triggerInfo, props.functionName);
-  }
-
-  async list(functionBrn: string, table?: boolean) {
-    const triggers = await Client.cfcClient
-      .listRelations({ FunctionBrn: functionBrn })
-      .then((response) => {
-        return response.body.Relation;
-      })
-      .catch((err) => {
-        throw new Error(err.message.Message);
-      });
-    if (table) {
-      tableShow(triggers, ['Source', 'Target', 'RelationId', 'Data']);
-    }
-    return triggers;
-  }
-
-  async remove(props: IProps) {
-    const Target = props.target;
-    const Source = props.source;
-    const RelationId = props.relationId;
-    if (!RelationId) {
-      throw new Error("No trigger's relationId provided");
-    } else {
-      logger.info(`Trigger relationId: ${RelationId}`);
-    }
-    const options = {
-      Target,
-      Source,
-      RelationId,
-    };
-
-    const vm = core.spinner('Trigger deleting...');
-    return await Client.cfcClient
-      .deleteRelation(options)
-      .then((response) => {
-        vm.succeed('Trigger deleted');
-        return response.body;
-      })
-      .catch((err) => {
-        vm.fail('Trigger failed.');
-        logger.error(err.message.Message);
-        return err;
-      });
-  }
-
-  async handleResponse(triggerInfo: any, functionName: string) {
-    const relationId = triggerInfo.RelationId;
-    const triggers = await this.list(triggerInfo.Target);
-    logger.debug(`Handling response of trigger: ${relationId}`);
-    let info;
-    for (let trigger of triggers) {
-      if (trigger.RelationId === relationId) {
-        delete trigger.Sid;
-        delete trigger.Target;
-        delete trigger.Data.Brn;
-        info = trigger;
-      }
-    }
-    let contentTrigger = [
-      {
-        desc: 'RelationId',
-        example: info.RelationId,
-      },
-      {
-        desc: 'Source',
-        example: info.Source,
-      },
-    ];
-    const data = info.Data;
-    let contentData = [];
-
-    if (triggerInfo.Source === 'cfc-http-trigger/v1/CFCAPI') {
-      contentTrigger.push({
-        desc: 'Url',
-        example: data['EndpointPrefix'] + data['ResourcePath'],
-      });
-      delete data['EndpointPrefix'];
-    }
-    const keys = Object.keys(data);
-
-    for (let key of keys) {
-      contentData.push({
-        desc: key,
-        example: `${data[key]}`,
-      });
-    }
-    contentTrigger.push({
-      desc: 'More',
-      example: `https://console.bce.baidu.com/cfc/#/cfc/function/trigger~name=${functionName}`,
-    });
-    return [
-      {
-        header: 'Trigger',
-        content: contentTrigger,
-      },
-      {
-        header: 'Trigger data',
-        content: contentData,
-      },
-    ];
-  }
-
-  async checkAndGetRelationId(functionBrn: string, props: any): Promise<{ isNew: boolean; relationId?: string }> {
-    const vm = core.spinner('Checking if the trigger exists...');
-    if (props.trigger.relationId) {
-      return {
-        isNew: false,
-        relationId: props.trigger.relationId,
-      };
-    }
-    const sourceType = props.trigger.source;
-    const triggers = await this.list(functionBrn);
-    if (!SOURCE_TYPES.includes(sourceType) && !SOURCE_TYPES.includes(sourceType.slice(0, 3))) {
-      vm.fail('Trigger deploy failed');
-      throw new Error('不支持的触发器类型');
-    }
-    logger.debug(`SourceType:${sourceType}`);
-    // TODO：此处代码结构繁琐，请修改
-    let relationId = '-1';
-    if (sourceType === 'dueros') {
-      for (let i = 0; i < triggers.length; i++) {
-        if (triggers[i].Source === 'dueros') {
-          relationId = triggers[i].RelationId;
-          break;
+    public async getTriggerId(client: FunctionGraphClient): Promise<string>{
+        const topicUrn = this.eventData.topicUrn;
+        const trigger = (await this.list(client)).find(trigger => {return trigger.event_data.topic_urn == topicUrn})
+        if(trigger.trigger_id){
+            this.triggerId = trigger.trigger_id;  
+            return this.triggerId;
+        }else{
+            return null;
         }
-      }
-    } else if (sourceType === 'duedge') {
-      vm.fail('Trigger deploy failed');
-      throw new Error(`暂不支持构建该触发器，请转到https://console.bce.baidu.com/cfc/#/cfc/function/trigger~name=${props.functionName} 进行创建`);
-    } else if (sourceType === 'cfc-http-trigger/v1/CFCAPI') {
-      const ResourcePath = props.trigger.data.ResourcePath;
-      for (let i = 0; i < triggers.length; i++) {
-        if (triggers[i].Source == 'cfc-http-trigger/v1/CFCAPI' && triggers[i].Data.ResourcePath === ResourcePath) {
-          logger.debug(JSON.stringify(triggers[i]));
-          relationId = triggers[i].RelationId;
-        }
-      }
-    } else if (sourceType === 'cfc-crontab-trigger/v1/') {
-      throw new Error(`请前往控制台创建定时触发器，https://console.bce.baidu.com/cfc/#/cfc/functions`);
-      // const name = props.trigger.data.Name;
-      // for (let i = 0; i < triggers.length; i++) {
-      //   if (triggers[i].Source == 'cfc-crontab-trigger/v1/' && triggers[i].Data.Name === name) {
-      //     logger.debug(JSON.stringify(triggers[i]));
-      //     relationId = triggers[i].RelationId;
-      //   }
-      // }
-    } else if (sourceType.slice(0, 3) === 'bos') {
-      const name = props.trigger.data.Name;
-      for (let i = 0; i < triggers.length; i++) {
-        if (triggers[i].Source == sourceType && triggers[i].Data.Name == name) {
-          logger.debug(JSON.stringify(triggers[i]));
-          relationId = triggers[i].RelationId;
-        }
-      }
-    } else if (sourceType === 'cdn') {
-      const eventType = props.trigger.data.EventType;
-      for (let i = 0; i < triggers.length; i++) {
-        if (triggers[i].Source == 'cdn' && triggers[i].Data.EventType === eventType) {
-          logger.debug(JSON.stringify(triggers[i]));
-          relationId = triggers[i].RelationId;
-        }
-      }
+    }
+}
+
+// interface DMSEventData {
+//     queueId: string,
+//     consumerGroupId: string
+// }
+
+// export class TriggerDMS extends Trigger{
+//     public eventData: DMSEventData;
+
+//     public constructor(triggerTypeCode: string, eventTypeCode: string, status: string, functionUrn: string, eventData: DMSEventData) {
+//         super(triggerTypeCode, eventTypeCode, status, functionUrn);
+//         this['eventData'] = eventData;
+//     }
+    
+//     public getEventData():object {
+//         return this.eventData;
+//     }
+// }
+
+interface DISEventData {
+    streamName: string,
+    sharditeratorType: string,
+    batchSize?: number,
+    pollingInterval?: number
+}
+
+export class TriggerDIS extends Trigger{
+    public eventData: DISEventData;
+
+    public constructor(triggerTypeCode: string, eventTypeCode: string, status: string, functionUrn: string, eventData: DISEventData) {
+        super(triggerTypeCode, eventTypeCode, status, functionUrn);
+        this['eventData'] = eventData;
+    }
+    
+    public getEventData():object {
+        return this.eventData;
     }
 
-    if (relationId === '-1') {
-      vm.succeed(`The trigger is a new one of ${props.functionName}.`);
-      return {
-        isNew: true,
-      };
-    } else {
-      vm.succeed(`The trigger is already online under ${props.functionName}`);
-      return {
-        isNew: false,
-        relationId,
-      };
+    public async getTriggerId(client:FunctionGraphClient): Promise<string> {
+        if(this.triggerId){
+            return this.triggerId;
+        }
+        const triggers = await this.list(client);
+        const eventData = this.eventData;
+        const trigger = triggers.find(trigger => {
+            return trigger.event_data.streamName == eventData.streamName
+        })
+        if(trigger.trigger_id){
+            this.triggerId = trigger.trigger_id;  
+            return this.triggerId;
+        }else{
+            return null;
+        }
     }
-  }
+
+}
+
+interface APIGEventData {
+    groupId:string, 
+    envId:string, 
+    auth:string, 
+    protocol:string, 
+    name:string, 
+    path:string, 
+    matchMode:string,  
+    reqMethod:string , 
+    backendType:string , 
+    type: number,  
+    slDomain:string , 
+    instanceId:string 
+}
+
+export class TriggerAPIG extends Trigger{
+    public eventData: APIGEventData;
+
+    public constructor(triggerTypeCode: string, eventTypeCode: string, status: string, functionUrn: string, eventData: APIGEventData) {
+        super(triggerTypeCode, eventTypeCode, status, functionUrn);
+        this['eventData'] = eventData;
+    }
+    
+    public getEventData():object {
+        return this.eventData;
+    }
+
+    public async getTriggerId(client:FunctionGraphClient): Promise<string> {
+        if(this.triggerId){
+            return this.triggerId;
+        }
+        const triggers = await this.list(client);
+        const eventData = this.eventData;
+        const trigger = triggers.find(trigger => {
+            return trigger.event_data.streamName === eventData.groupId && trigger.event_data.env_id  === eventData.envId;
+        })
+        if(trigger.trigger_id){
+            this.triggerId = trigger.trigger_id;  
+            return this.triggerId;
+        }else{
+            return null;
+        }
+    }
+}
+
+interface TIMEREventData {
+    name: string,
+    scheduleType: string,
+    schedule: string,
+    userEvent?: string
+}
+
+export class TriggerTIMER extends Trigger{
+    public eventData: TIMEREventData;
+
+    public constructor(triggerTypeCode: string, eventTypeCode: string, status: string, functionUrn: string, eventData: TIMEREventData) {
+        super(triggerTypeCode, eventTypeCode, status, functionUrn);
+        this['eventData'] = eventData;
+    }
+    
+    public getEventData():object {
+        return this.eventData;
+    }
+
+    public async getTriggerId(client: FunctionGraphClient): Promise<string> {
+        if(this.triggerId){
+            return this.triggerId;
+        }
+        const triggers = await this.list(client);
+        const eventData = this.eventData;
+        const trigger = triggers.find(trigger => {
+            return trigger.event_data.name === eventData.name;
+        })
+        if(trigger.trigger_id){
+            this.triggerId = trigger.trigger_id;  
+            return this.triggerId;
+        }else{
+            return null;
+        }
+    }
+}
+
+interface LTSEventData {
+    groupId: string,
+    topicId: string
+}
+
+export class TriggerLTS extends Trigger{
+    public eventData: LTSEventData;
+
+    public constructor(triggerTypeCode: string, eventTypeCode: string, status: string, functionUrn: string, eventData: LTSEventData) {
+        super(triggerTypeCode, eventTypeCode, status, functionUrn);
+        this['eventData'] = eventData;
+    }
+    
+    public getEventData():object {
+        return this.eventData;
+    }
+
+    public async getTriggerId(client: FunctionGraphClient): Promise<string> {
+        if(this.triggerId){
+            return this.triggerId;
+        }
+        const triggers = await this.list(client);
+        const eventData = this.eventData;
+        const trigger = triggers.find(trigger => {
+            return trigger.event_data.group_id === eventData.groupId && trigger.event_data.topic_id === eventData.topicId;
+        })
+        if(trigger.trigger_id){
+            this.triggerId = trigger.trigger_id;  
+            return this.triggerId;
+        }else{
+            return null;
+        }
+    }
+}
+
+
+
+interface OBSEventData {
+    bucket: string,
+    events: Array<string>,
+    prefix?: string,
+    suffix?: string
+}
+
+export class TriggerOBS extends Trigger{
+    public eventData: OBSEventData;
+
+    public constructor(triggerTypeCode: string, eventTypeCode: string, status: string, functionUrn: string, eventData: OBSEventData) {
+        super(triggerTypeCode, eventTypeCode, status, functionUrn);
+        this['eventData'] = eventData;
+    }
+    
+    public getEventData():object {
+        return this.eventData;
+    }
+
+    public async getTriggerId(client: FunctionGraphClient): Promise<string> {
+        if(this.triggerId){
+            return this.triggerId;
+        }
+        const triggers = await this.list(client);
+        const eventData = this.eventData;
+
+        const trigger = triggers.find(trigger => {
+            return trigger.event_data.bucket === eventData.bucket && trigger.event_data.prefix === eventData.prefix && trigger.event_data.suffix === eventData.suffix;
+        })
+        if(trigger.trigger_id){
+            this.triggerId = trigger.trigger_id;  
+            return this.triggerId;
+        }else{
+            return null;
+        }
+    }
+}
+
+interface OBSEventData {
+    bucket: string,
+    events: Array<string>,
+    prefix?: string,
+    suffix?: string
+}
+
+
+export class TriggerCTS extends Trigger{
+    public eventData: CTSEventData;
+
+    public constructor(triggerTypeCode: string, eventTypeCode: string, status: string, functionUrn: string, eventData: CTSEventData) {
+        super(triggerTypeCode, eventTypeCode, status, functionUrn);
+        this['eventData'] = eventData;
+    }
+    
+    public getEventData():object {
+        return this.eventData;
+    }
+
+    public async getTriggerId(client: FunctionGraphClient): Promise<any> {
+        return null;
+    }
+}
+
+export class TriggerDDS extends Trigger{
+    public eventData: DDSEventData;
+
+    public constructor(triggerTypeCode: string, eventTypeCode: string, status: string, functionUrn: string, eventData: DDSEventData) {
+        super(triggerTypeCode, eventTypeCode, status, functionUrn);
+        this['eventData'] = eventData;
+    }
+    
+    public getEventData():object {
+        return this.eventData;
+    }
+
+    public async getTriggerId(client: FunctionGraphClient): Promise<any> {
+        return null;
+    } 
+}
+
+export class TriggerKAFKA extends Trigger{
+    public eventData: KAFKAEventData;
+
+    public constructor(triggerTypeCode: string, eventTypeCode: string, status: string, functionUrn: string, eventData: KAFKAEventData) {
+        super(triggerTypeCode, eventTypeCode, status, functionUrn);
+        this['eventData'] = eventData;
+    }
+    
+    public getEventData():object {
+        return this.eventData;
+    }
+
+    public async getTriggerId(client: FunctionGraphClient): Promise<any> {
+        return null;
+    }
 }
