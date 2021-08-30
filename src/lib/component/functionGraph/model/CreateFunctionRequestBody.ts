@@ -16,14 +16,21 @@
 //     }
 // }
 
-export interface InputProps {
-    func_name: string;
-    handler: string;
-    memory_size: number;
-    timeout: number;
-    runtime: string;
-    pkg: string;
-    code_type: string;
+export interface FunctionInputProps {
+    func_name: string,
+    handler: string,
+    memory_size: number,
+    timeout: number,
+    runtime: string,
+    pkg: string,
+    code_type: string,
+    code_filename?: string,
+    func_code?: any,
+    description?: string,
+    enterprise_project_id?: string,
+    app_xrole?: string,
+    initializer_handler?: string,
+    initializer_timeout?: string
 }
 export class CreateFunctionRequestBody {
     public func_name: string;
@@ -40,7 +47,7 @@ export class CreateFunctionRequestBody {
     public app_xrole?: string;
     public initializer_handler?: string;
     public initializer_timeout?: string;
-    public constructor(input: InputProps){
+    public constructor(input: FunctionInputProps){
         this['func_name'] = input.func_name;
         this['handler'] = input.handler;
         this['memory_size'] = input.memory_size;

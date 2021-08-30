@@ -4,8 +4,9 @@ import { CreateTriggerRequestBody } from "./functionGraph/model/CreateTriggerReq
 import { ListTriggerRequest } from "./functionGraph/model/ListTriggerRequest";
 import { UpdateTriggerRequest } from "./functionGraph/model/UpdateTriggerRequest";
 import { UpdateTriggerRequestBody } from "./functionGraph/model/UpdateTriggerRequestBody";
+import logger from '../../common/logger';
 
-abstract class Trigger {
+export abstract class Trigger {
     public triggerId?: string;
     public triggerTypeCode: string;
     public eventTypeCode: string;
@@ -84,9 +85,8 @@ abstract class Trigger {
     }
     
     public async remove(client: FunctionGraphClient): Promise<any> {
-        
+        logger.info("Dummy remove");
     }
-
 
     abstract getTriggerId(client: FunctionGraphClient): Promise<string>;
 

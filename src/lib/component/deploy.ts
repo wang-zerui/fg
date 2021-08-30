@@ -4,7 +4,7 @@ import * as core from '@serverless-devs/core';
 import logger from '../../common/logger';
 import * as HELP from '../help/deploy';
 import Function from './function';
-import Trigger from './trigger';
+import { Trigger, TriggerDDS, TriggerCTS, TriggerAPIG, TriggerDIS, TriggerKAFKA, TriggerLTS, TriggerOBS, TriggerSMN, TriggerTIMER } from './trigger';
 let CONFIGS = require('../config');
 import StdoutFormatter from './stdout-formatter';
 import { mark } from '../interface/profile';
@@ -12,6 +12,9 @@ import { mark } from '../interface/profile';
 const COMMAND: string[] = ['all', 'function', 'trigger', 'help'];
 
 export default class deploy {
+  public function: Function;
+  public trigger: Trigger;
+
   static async handleInputs(inputs) {
     logger.debug(`inputs.props: ${JSON.stringify(inputs.props)}`);
 
@@ -63,8 +66,8 @@ export default class deploy {
       table: parsedData.table,
     };
   }
-  constructor({ endpoint, credentials }: { endpoint: string; credentials: ICredentials }) {
-    Client.setCfcClient(credentials, endpoint);
+  constructor(credentials: ICredentials, projectId: string, endpoint: string) {
+    Client.setFgClient(credentials, projectId, endpoint);
   }
 
   async deployFunction({ props, credentials }) {
@@ -119,17 +122,7 @@ export default class deploy {
     }
   }
 
-  //未提供functionBrn时使用functionName获得functionBrn
-  async getBrn(props, credentials) {
-    const protocol = props.protocol || CONFIGS.defaultProtocol;
-    const postEndpoint = props.endpoint || CONFIGS.defaultEndpoint;
-    const endpoint = protocol + '://' + postEndpoint;
-    const functionClient = new Function({ endpoint, credentials });
-    return await functionClient.getBrnByFunctionName(props.functionName);
-  }
-
-  async getInfo(props, credentials, relationId) {}
-  async deploy(props, subCommand, credentials) {
+  public async deploy(props, subCommand, credentials) {
     if (subCommand === 'all') {
       const functionInfo = await this.deployFunction({ props, credentials });
       const functionBrn = props.trigger.target || functionInfo.functionBrn;

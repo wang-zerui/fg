@@ -4,6 +4,7 @@ import { ICredentials } from '../interface/profile';
 import Client from '../client';
 import { startZip, tableShow, deleteZip } from '../utils';
 import logger from '../../common/logger';
+import { FunctionInputProps } from './functionGraph/model/CreateFunctionRequestBody'
 import { CreateFunctionRequest } from './functionGraph/model/CreateFunctionRequest';
 import { CreateFunctionRequestBody } from './functionGraph/model/CreateFunctionRequestBody';
 import { FUNCTION_INFO_KEYS } from './functionGraph/model/FunctionInfo'
@@ -15,8 +16,9 @@ import { UpdateFunctionConfigRequest } from './functionGraph/model/UpdateFunctio
 let CONFIGS = require('../config');
 
 export default class Function {
-  public constructor({ endpoint, credentials, projectId }: { endpoint: string; credentials: ICredentials; projectId: string }) {
-    Client.setFgClient(credentials, projectId, endpoint);
+  public functionInfo: FunctionInputProps;
+  public constructor(functionInfo: FunctionInputProps) {
+    this.functionInfo = functionInfo;
   }
 
   /**
