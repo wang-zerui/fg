@@ -25,6 +25,7 @@ export default class ComponentDemo extends BaseComponent {
   public async deploy(inputs: InputProps): Promise<any> {
     const {
       endpoint,
+      projectId,
       credentials,
       subCommand,
       props,
@@ -41,7 +42,7 @@ export default class ComponentDemo extends BaseComponent {
       return;
     }
 
-    const deployInfo = await new Deploy({ endpoint, credentials }).deploy(props, subCommand, credentials);
+    const deployInfo = await new Deploy(credentials, projectId, endpoint).deploy(props, subCommand, credentials);
     logger.info(`Deploy info is shown here:`);
     core.help(deployInfo);
   }

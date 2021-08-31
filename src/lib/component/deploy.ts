@@ -5,16 +5,19 @@ import logger from '../../common/logger';
 import * as HELP from '../help/deploy';
 import Function from './function';
 import { Trigger, TriggerDDS, TriggerCTS, TriggerAPIG, TriggerDIS, TriggerKAFKA, TriggerLTS, TriggerOBS, TriggerSMN, TriggerTIMER } from './trigger';
+
 let CONFIGS = require('../config');
 import StdoutFormatter from './stdout-formatter';
 import { mark } from '../interface/profile';
+import { FunctionGraphClient } from './functionGraph/FunctionGraphClient';
+import { FunctionInputProps } from './functionGraph/model/CreateFunctionRequestBody';
 
 const COMMAND: string[] = ['all', 'function', 'trigger', 'help'];
 
 export default class deploy {
   public function: Function;
   public trigger: Trigger;
-
+  private client: FunctionGraphClient;
   static async handleInputs(inputs) {
     logger.debug(`inputs.props: ${JSON.stringify(inputs.props)}`);
 
@@ -46,19 +49,29 @@ export default class deploy {
 
     const endProps = props;
 
-    if (!endProps.endpoint) {
-      throw new Error('Not fount endpoint');
+    if(!props.region){
+      throw new Error("Region not found, please input one.")
+    }
+
+    const endpoint = CONFIGS.endpoints[props.region];
+    if(!endpoint) {
+      throw new Error(`Wrong region.`)
+    }
+
+    const projectId = props.projectId;
+    if(!projectId){
+      throw new Error(`ProjectId not found.`)
     }
 
     const credentials: ICredentials = inputs.credentials;
+    
     logger.debug(`handler inputs props: ${JSON.stringify(endProps)}`);
-    const protocol = props.protocol || CONFIGS.defaultProtocol;
-    const postEndpoint = props.endpoint || CONFIGS.defaultEndpoint;
-    const endpoint = protocol + '://' + postEndpoint;
-    logger.info('Using endpoing:' + endpoint);
+    
+    logger.info(`Using region:${props.region}`);
 
     return {
       endpoint,
+      projectId,
       credentials,
       subCommand,
       props: endProps,
@@ -68,21 +81,34 @@ export default class deploy {
   }
   constructor(credentials: ICredentials, projectId: string, endpoint: string) {
     Client.setFgClient(credentials, projectId, endpoint);
+    this.client = Client.fgClient;
   }
 
-  async deployFunction({ props, credentials }) {
-    const protocol = props.protocol || CONFIGS.defaultProtocol;
-    const postEndpoint = props.endpoint || CONFIGS.defaultEndpoint;
-    const endpoint = protocol + '://' + postEndpoint;
-    const functionClient = new Function({ endpoint, credentials });
+  async deployFunction(props) {
+    const functionInputs: FunctionInputProps = {
+      func_name: props.function.functionName,
+      handler: props.function.handler,
+      memory_size: props.function.memorySize,
+      timeout: props.function.timeout,
+      runtime: props.function.runtime,
+      pkg: props.function.package,
+      code_type: props.function.codeType,
+      code_filename: props.function.filename,
+      description: props.function.description,
+      enterprise_project_id: props.function.enterpriseProjectId,
+      xrole: props.function.xrole,
+      app_xrole: props.function.appXrole,
+      initializer_handler: props.function.initializerHandler,
+      initializer_timeout: props.function.initializerTimeout
+    }
+    const functionClient = new Function(functionInputs);
     //检查函数是否被创建
-    const isCreated = await functionClient.check(props.functionName);
+    const isCreated = await functionClient.check(this.client);
     if (isCreated) {
-      await functionClient.updateConfig(props);
-      const res = await functionClient.updateCode(props);
-      return res;
+      await functionClient.updateConfig(this.client);
+      return await functionClient.updateCode(this.client, props.function.codeUri);
     } else {
-      return await functionClient.create(props);
+      return await functionClient.create(this.client, props.function.codeUri);
     }
   }
 

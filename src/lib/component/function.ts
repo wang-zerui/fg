@@ -70,9 +70,9 @@ export default class Function {
    * @returns res
    * @returns functionBrn
    */
-  public async updateCode(client: FunctionGraphClient, codeUri: string) {
+  public async updateCode(client: FunctionGraphClient, codeUri?: string) {
     const vm1 = core.spinner('File compressing...');
-    const ZipFile = await startZip(codeUri);
+    const ZipFile = await startZip(codeUri || './');
     await deleteZip('hello.zip');
     vm1.succeed('File compression completed');
 
