@@ -31,6 +31,12 @@ export class UpdateFunctionConfigRequestBody {
         this['memory_size'] = input.memory_size;
         this['timeout'] = input.timeout;
         this['runtime'] = input.runtime;
+        this['description'] = input.description;
+        this['enterprise_project_id'] = input.enterprise_project_id;
+        this['xrole'] = input.xrole;
+        this['app_xrole'] = input.app_xrole;
+        this['initializer_handler'] = input.initializer_handler;
+        this['initializer_timeout'] = input.initializer_timeout;
     }
     public withFunctionName(func_name: string): UpdateFunctionConfigRequestBody{
         this['func_name'] = func_name;

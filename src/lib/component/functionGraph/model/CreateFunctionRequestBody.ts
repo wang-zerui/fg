@@ -28,6 +28,7 @@ export interface FunctionInputProps {
     func_code?: any,
     description?: string,
     enterprise_project_id?: string,
+    xrole?: string;
     app_xrole?: string,
     initializer_handler?: string,
     initializer_timeout?: string
@@ -44,6 +45,7 @@ export class CreateFunctionRequestBody {
     public func_code?: any;
     public description?: string;
     public enterprise_project_id?: string;
+    public xrole?: string;
     public app_xrole?: string;
     public initializer_handler?: string;
     public initializer_timeout?: string;
@@ -55,6 +57,14 @@ export class CreateFunctionRequestBody {
         this['runtime'] = input.runtime;
         this['package'] = input.pkg;
         this['code_type'] = input.code_type;
+        this['code_filename'] = input.code_filename;
+        this['func_code'] = input.func_code;
+        this['description'] = input.description;
+        this['enterprise_project_id'] = input.enterprise_project_id;
+        this['xrole'] = input.xrole;
+        this['app_xrole'] = input.app_xrole;
+        this['initializer_handler'] = input.initializer_handler;
+        this['initializer_timeout'] = input.initializer_timeout;
     }
     public withFunctionName(func_name: string): CreateFunctionRequestBody{
         this['func_name'] = func_name;
