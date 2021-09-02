@@ -4,7 +4,7 @@ import * as core from '@serverless-devs/core';
 import logger from '../../common/logger';
 import * as HELP from '../help/deploy';
 import Function from './function';
-import { Trigger, TriggerDDS, TriggerCTS, TriggerAPIG, TriggerDIS, TriggerKAFKA, TriggerLTS, TriggerOBS, TriggerSMN, TriggerTIMER } from './trigger';
+import { Trigger, getTriggerClient } from './trigger';
 
 let CONFIGS = require('../config');
 import StdoutFormatter from './stdout-formatter';
@@ -15,8 +15,8 @@ import { FunctionInputProps } from './functionGraph/model/CreateFunctionRequestB
 const COMMAND: string[] = ['all', 'function', 'trigger', 'help'];
 
 export default class deploy {
-  public function: Function;
-  public trigger: Trigger;
+  public functionClient: Function;
+  public triggerClient: Trigger;
   private client: FunctionGraphClient;
   static async handleInputs(inputs) {
     logger.debug(`inputs.props: ${JSON.stringify(inputs.props)}`);
@@ -85,6 +85,22 @@ export default class deploy {
   }
 
   async deployFunction(props) {
+    //检查函数是否被创建
+    const isCreated = await this.functionClient.check(this.client);
+    if (isCreated) {
+      await this.functionClient.updateConfig(this.client);
+      return await this.functionClient.updateCode(this.client, props.function.codeUri);
+    } else {
+      return await this.functionClient.create(this.client, props.function.codeUri);
+    }
+  }
+
+  async deployTrigger(props, functionUrn: string) {
+    this.triggerClient.functionUrn = functionUrn;
+    return await this.triggerClient.create(this.client);
+  }
+
+  public async deploy(props, subCommand: string, credentials:ICredentials) {
     const functionInputs: FunctionInputProps = {
       func_name: props.function.functionName,
       handler: props.function.handler,
@@ -101,70 +117,26 @@ export default class deploy {
       initializer_handler: props.function.initializerHandler,
       initializer_timeout: props.function.initializerTimeout
     }
-    const functionClient = new Function(functionInputs);
-    //检查函数是否被创建
-    const isCreated = await functionClient.check(this.client);
-    if (isCreated) {
-      await functionClient.updateConfig(this.client);
-      return await functionClient.updateCode(this.client, props.function.codeUri);
-    } else {
-      return await functionClient.create(this.client, props.function.codeUri);
-    }
-  }
+    this.functionClient = new Function(functionInputs);
+    this.triggerClient = getTriggerClient(props);
 
-  async deployTrigger(functionBrn: string, props, credentials: ICredentials) {
-    const target = functionBrn;
-    const triggerClient = new Trigger(credentials);
-    logger.info(`Using FunctionBrn: ${target}`);
-    // 调用check&getRelationId
-    if (props.trigger.source === 'bos') {
-      if (!props.trigger.bucket) {
-        throw new Error('Missing trigger bucket name.');
-      }
-      props.trigger.source = `bos/${props.trigger.bucket}`;
-      logger.debug(props.trigger.source);
-    }
-    const { isNew, relationId } = await triggerClient.checkAndGetRelationId(target, props);
-
-    const data = props.trigger.data || {};
-    const source = props.trigger.source;
-    if (isNew) {
-      const IProps = {
-        functionName: props.functionName,
-        target,
-        data,
-        source,
-      };
-      return await triggerClient.create(IProps);
-    } else {
-      const IProps = {
-        functionName: props.functionName,
-        target,
-        data,
-        source,
-        relationId,
-      };
-      return await triggerClient.update(IProps);
-    }
-  }
-
-  public async deploy(props, subCommand, credentials) {
     if (subCommand === 'all') {
-      const functionInfo = await this.deployFunction({ props, credentials });
-      const functionBrn = props.trigger.target || functionInfo.functionBrn;
+      const functionInfo = await this.deployFunction(props);
+      // 如果用户提供了functionUrn，则优先使用用户提供的functionUrn
+      const functionUrn = props.trigger.functionUrn || functionInfo.functionUrn;
       if (props.trigger) {
-        const triggerInfo = await this.deployTrigger(functionBrn, props, credentials);
+        const triggerInfo = await this.deployTrigger(props, functionUrn);
         return functionInfo.res.concat(triggerInfo);
       } else {
         return functionInfo.res;
       }
     }
     if (subCommand === 'function') {
-      return (await this.deployFunction({ props, credentials })).res;
+      return (await this.deployFunction(props)).res;
     }
     if (subCommand === 'trigger') {
-      const functionBrn = props.trigger.target || (await this.getBrn(props, credentials));
-      return await this.deployTrigger(functionBrn, props, credentials);
+      const functionUrn = props.trigger.functionUrn || (await this.functionClient.getFunctionUrn(this.client));
+      return await this.deployTrigger(props, functionUrn);
     }
     if (subCommand === 'help') {
       core.help(HELP.DEPLOY);

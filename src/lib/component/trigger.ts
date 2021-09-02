@@ -6,15 +6,41 @@ import { UpdateTriggerRequest } from "./functionGraph/model/UpdateTriggerRequest
 import { UpdateTriggerRequestBody } from "./functionGraph/model/UpdateTriggerRequestBody";
 import logger from '../../common/logger';
 
+export const TRIGGER_TYPE_CODES = ['SMN', 'APIG', 'OBS', 'TIMER', 'DMS', 'DIS', 'LTS', 'DDS', 'CTS', 'kafka'];
+export const STATUSES = ['ACTIVE', 'DISABLED'];
+
+export interface TriggerInputProps {
+    triggerId?: string,
+    triggerTypeCode: string,
+    eventTypeCode: string,
+    status: string,
+    functionUrn?: string
+}
+
 export abstract class Trigger {
     public triggerId?: string;
     public triggerTypeCode: string;
     public eventTypeCode: string;
     public status: string;
-    public functionUrn: string;
-    static TRIGGER_TYPE_CODES = ['SMN', 'APIG', 'OBS', 'TIMER', 'DMS', 'DIS', 'LTS', 'DDS', 'CTS', 'kafka'];
-    static STATUSES = ['ACTIVE', 'DISABLED'];
-    public constructor(triggerTypeCode: string, eventTypeCode: string, status: string, functionUrn: string){
+    public functionUrn?: string;
+    public constructor(input: TriggerInputProps){
+
+        const {
+            triggerId,
+            triggerTypeCode,
+            eventTypeCode,
+            status,
+            functionUrn
+        } = input;
+
+        if(!(triggerTypeCode in TRIGGER_TYPE_CODES)) {
+            throw new Error("Invalid triggerTypeCode.");
+        }
+        if(!(status in STATUSES)) {
+            throw new Error("Invalid status");
+        }
+        
+        this['triggerId'] = triggerId;
         this['triggerTypeCode'] = triggerTypeCode;
         this['status'] = status;
         this['eventTypeCode'] = eventTypeCode;
@@ -160,8 +186,8 @@ interface KAFKAEventData {
 export class TriggerSMN extends Trigger{
     public eventData: SMNEventData;
 
-    public constructor(triggerTypeCode: string, eventTypeCode: string, status: string, functionUrn: string, eventData: SMNEventData) {
-        super(triggerTypeCode, eventTypeCode, status, functionUrn);
+    public constructor(input: TriggerInputProps, eventData: SMNEventData) {
+        super(input);
         this['eventData'] = eventData;
     }
     
@@ -189,8 +215,8 @@ export class TriggerSMN extends Trigger{
 // export class TriggerDMS extends Trigger{
 //     public eventData: DMSEventData;
 
-//     public constructor(triggerTypeCode: string, eventTypeCode: string, status: string, functionUrn: string, eventData: DMSEventData) {
-//         super(triggerTypeCode, eventTypeCode, status, functionUrn);
+//     public constructor(input: TriggerInputProps, eventData: DMSEventData) {
+//         super(input);
 //         this['eventData'] = eventData;
 //     }
     
@@ -209,8 +235,8 @@ interface DISEventData {
 export class TriggerDIS extends Trigger{
     public eventData: DISEventData;
 
-    public constructor(triggerTypeCode: string, eventTypeCode: string, status: string, functionUrn: string, eventData: DISEventData) {
-        super(triggerTypeCode, eventTypeCode, status, functionUrn);
+    public constructor(input: TriggerInputProps, eventData: DISEventData) {
+        super(input);
         this['eventData'] = eventData;
     }
     
@@ -255,8 +281,8 @@ interface APIGEventData {
 export class TriggerAPIG extends Trigger{
     public eventData: APIGEventData;
 
-    public constructor(triggerTypeCode: string, eventTypeCode: string, status: string, functionUrn: string, eventData: APIGEventData) {
-        super(triggerTypeCode, eventTypeCode, status, functionUrn);
+    public constructor(input: TriggerInputProps, eventData: APIGEventData) {
+        super(input);
         this['eventData'] = eventData;
     }
     
@@ -292,8 +318,8 @@ interface TIMEREventData {
 export class TriggerTIMER extends Trigger{
     public eventData: TIMEREventData;
 
-    public constructor(triggerTypeCode: string, eventTypeCode: string, status: string, functionUrn: string, eventData: TIMEREventData) {
-        super(triggerTypeCode, eventTypeCode, status, functionUrn);
+    public constructor(input: TriggerInputProps, eventData: TIMEREventData) {
+        super(input);
         this['eventData'] = eventData;
     }
     
@@ -327,8 +353,8 @@ interface LTSEventData {
 export class TriggerLTS extends Trigger{
     public eventData: LTSEventData;
 
-    public constructor(triggerTypeCode: string, eventTypeCode: string, status: string, functionUrn: string, eventData: LTSEventData) {
-        super(triggerTypeCode, eventTypeCode, status, functionUrn);
+    public constructor(input: TriggerInputProps, eventData: LTSEventData) {
+        super(input);
         this['eventData'] = eventData;
     }
     
@@ -366,8 +392,8 @@ interface OBSEventData {
 export class TriggerOBS extends Trigger{
     public eventData: OBSEventData;
 
-    public constructor(triggerTypeCode: string, eventTypeCode: string, status: string, functionUrn: string, eventData: OBSEventData) {
-        super(triggerTypeCode, eventTypeCode, status, functionUrn);
+    public constructor(input: TriggerInputProps, eventData: OBSEventData) {
+        super(input);
         this['eventData'] = eventData;
     }
     
@@ -405,8 +431,8 @@ interface OBSEventData {
 export class TriggerCTS extends Trigger{
     public eventData: CTSEventData;
 
-    public constructor(triggerTypeCode: string, eventTypeCode: string, status: string, functionUrn: string, eventData: CTSEventData) {
-        super(triggerTypeCode, eventTypeCode, status, functionUrn);
+    public constructor(input: TriggerInputProps, eventData: CTSEventData) {
+        super(input);
         this['eventData'] = eventData;
     }
     
@@ -422,8 +448,8 @@ export class TriggerCTS extends Trigger{
 export class TriggerDDS extends Trigger{
     public eventData: DDSEventData;
 
-    public constructor(triggerTypeCode: string, eventTypeCode: string, status: string, functionUrn: string, eventData: DDSEventData) {
-        super(triggerTypeCode, eventTypeCode, status, functionUrn);
+    public constructor(input: TriggerInputProps, eventData: DDSEventData) {
+        super(input);
         this['eventData'] = eventData;
     }
     
@@ -439,8 +465,8 @@ export class TriggerDDS extends Trigger{
 export class TriggerKAFKA extends Trigger{
     public eventData: KAFKAEventData;
 
-    public constructor(triggerTypeCode: string, eventTypeCode: string, status: string, functionUrn: string, eventData: KAFKAEventData) {
-        super(triggerTypeCode, eventTypeCode, status, functionUrn);
+    public constructor(input: TriggerInputProps, eventData: KAFKAEventData) {
+        super(input);
         this['eventData'] = eventData;
     }
     
@@ -450,5 +476,35 @@ export class TriggerKAFKA extends Trigger{
 
     public async getTriggerId(client: FunctionGraphClient): Promise<any> {
         return null;
+    }
+}
+
+export function getTriggerClient(props: any, functionUrn?: string): Trigger{
+    const input: TriggerInputProps = {
+        triggerTypeCode: props.trigger.triggerTypeCode,
+        eventTypeCode: props.trigger.eventTypeCode,
+        status: props.trigger.staus || "ACTIVE",
+        functionUrn: functionUrn
+    }
+    const triggerTypeCode = props.triggerTypeCode;
+    const eventData = props.trigger.eventData;
+    if(triggerTypeCode === "DDS"){
+        return new TriggerDDS(input, eventData);
+    }else if(triggerTypeCode === "CTS"){
+        return new TriggerCTS(input, eventData);
+    }else if(triggerTypeCode === "APIG"){
+        return new TriggerAPIG(input, eventData);
+    }else if(triggerTypeCode === "DIS"){
+        return new TriggerDIS(input, eventData);
+    }else if(triggerTypeCode === "KAFAKA"){
+        return new TriggerKAFKA(input, eventData);
+    }else if(triggerTypeCode === "LTS"){
+        return new TriggerLTS(input, eventData);
+    }else if(triggerTypeCode === "OBS"){
+        return new TriggerOBS(input, eventData);
+    }else if(triggerTypeCode === "SMN"){
+        return new TriggerSMN(input, eventData);
+    }else if(triggerTypeCode === "TIMER"){
+        return new TriggerTIMER(input, eventData);
     }
 }
