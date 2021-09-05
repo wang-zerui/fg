@@ -1,13 +1,18 @@
 import { ICredentials } from '../interface/profile';
-import Client from '../client';
+// import Client from '../client';
 import * as core from '@serverless-devs/core';
 import logger from '../../common/logger';
 import * as HELP from '../help/remove';
-import Function from './function';
-import Trigger from './trigger';
+// import Function from './function';
+// import { Trigger } from './trigger';
 let CONFIGS = require('../config');
 import StdoutFormatter from './stdout-formatter';
 import { mark } from '../interface/profile';
+import { FunctionInputProps } from './functionGraph/model/CreateFunctionRequestBody';
+import Client from '../client';
+import { FunctionGraphClient } from './functionGraph/FunctionGraphClient';
+import { getTriggerClient, Trigger } from './trigger';
+import Function from './function';
 
 const COMMAND: string[] = ['all', 'function', 'trigger', 'help'];
 
@@ -23,7 +28,10 @@ const COMMAND: string[] = ['all', 'function', 'trigger', 'help'];
 //   aliasName?: string;
 // }
 
-export default class remove {
+export default class Remove {
+  public functionClient: Function;
+  public triggerClient: Trigger;
+  private client: FunctionGraphClient;
   static async handleInputs(inputs) {
     logger.debug(`inputs.props: ${JSON.stringify(inputs.props)}`);
 
@@ -35,13 +43,12 @@ export default class remove {
     const parsedData = parsedArgs?.data || {};
     const rawData = parsedData._ || [];
     await StdoutFormatter.initStdout();
-    logger.info(StdoutFormatter.stdoutFormatter.using('endpoint', inputs.props.endpoint));
     logger.info(StdoutFormatter.stdoutFormatter.using('access alias', inputs.access));
     logger.info(StdoutFormatter.stdoutFormatter.using('accessKeySecret', mark(String(inputs.credentials.AccessKeyID))));
     logger.info(StdoutFormatter.stdoutFormatter.using('accessKeyID', mark(String(inputs.credentials.SecretAccessKey))));
 
     const subCommand = rawData[0] || 'all';
-    logger.debug(`remove subCommand: ${subCommand}`);
+    logger.debug(`deploy subCommand: ${subCommand}`);
     if (!COMMAND.includes(subCommand)) {
       core.help(HELP.REMOVE);
       return { errorMessage: `Does not support ${subCommand} command` };
@@ -56,88 +63,66 @@ export default class remove {
 
     const endProps = props;
 
+    if(!props.region){
+      throw new Error("Region not found, please input one.")
+    }
+
+    const endpoint = CONFIGS.endpoints[props.region];
+    if(!endpoint) {
+      throw new Error(`Wrong region.`)
+    }
+
+    const projectId = props.projectId;
+    if(!projectId){
+      throw new Error(`ProjectId not found.`)
+    }
+
     const credentials: ICredentials = inputs.credentials;
+    
     logger.debug(`handler inputs props: ${JSON.stringify(endProps)}`);
-    const protocol = props.protocol || CONFIGS.defaultProtocol;
-    const postEndpoint = props.endpoint || CONFIGS.defaultEndpoint;
-    const endpoint = protocol + '://' + postEndpoint;
+    
+    logger.info(`Using region:${props.region}`);
+
     return {
       endpoint,
+      projectId,
       credentials,
       subCommand,
       props: endProps,
       args: props.args,
+      table: parsedData.table,
     };
   }
-
-  constructor({ credentials }: { credentials: ICredentials }) {
-    Client.setCfcClient(credentials);
+  constructor(credentials: ICredentials, projectId: string, endpoint: string) {
+    Client.setFgClient(credentials, projectId, endpoint);
+    this.client = Client.fgClient;
   }
-
-  async removeFunction({ endpoint, credentials, functionName }) {
-    const functionClient = new Function({ endpoint, credentials });
-    const isCreated = await functionClient.check(functionName);
-    if (!isCreated) {
-      throw new Error(`Function not found.`);
-    }
-    return functionClient.remove(functionName);
-  }
-
-  async removeTrigger({ credentials, props, functionBrn }) {
-    let triggerClient = new Trigger(credentials);
-    const target = functionBrn;
-    const source = props.trigger.source;
-    const data = props.trigger.data;
-    if (props.trigger.relationId) {
-      const relationId = props.trigger.relationId;
-      const IProps = {
-        target,
-        data,
-        source,
-        relationId,
-      };
-      return await triggerClient.remove(IProps);
-    } else {
-      const checkRes = await triggerClient.checkAndGetRelationId(functionBrn, props);
-      if (checkRes.isNew) {
-        throw new Error('Trigger not found.');
-      } else {
-        const IProps = {
-          target,
-          data,
-          source,
-          relationId: checkRes.relationId,
-        };
-        return await triggerClient.remove(IProps);
+    
+  async remove(props, subCommand) {
+    if(props.function){
+      const functionInputs: FunctionInputProps = {
+        func_name: props.function.functionName,
+        handler: "index.handler",
+        memory_size: -1,
+        timeout: -1,
+        runtime: "Node.js8.10",
+        pkg: "default",
+        code_type: ""
       }
+      this.functionClient = new Function(functionInputs);
     }
-  }
-
-  async getBrn(props, credentials) {
-    const protocol = props.protocol || CONFIGS.defaultProtocol;
-    const postEndpoint = props.endpoint || CONFIGS.defaultEndpoint;
-    const endpoint = protocol + '://' + postEndpoint;
-    const functionClient = new Function({ endpoint, credentials });
-    return await functionClient.getBrnByFunctionName(props.functionName);
-  }
-
-  async remove(endpoint, props, subCommand, credentials) {
-    if (subCommand === 'all') {
-      //const functionBrn = props.functionBrn || await this.getBrn(props, credentials);
-      //await this.removeTrigger({credentials, props, functionBrn});
-      const functionName = props.functionName;
-      await this.removeFunction({ endpoint, credentials, functionName });
-      // 测试发现，删除函数的同时，触发器也会被删除，所以此处省略删除trigger的代码
-      const vm = core.spinner(`All triggers of function ${functionName} deleting...`);
-      vm.succeed(`All triggers of function ${functionName} deleted`);
+    if(props.trigger){
+      this.triggerClient = getTriggerClient(props);
     }
-    if (subCommand === 'function') {
-      const functionName = props.functionName;
-      return await this.removeFunction({ endpoint, credentials, functionName });
+    if (subCommand === 'all' || subCommand === 'function') {
+      await this.functionClient.remove(this.client);
     }
     if (subCommand === 'trigger') {
-      const functionBrn = props.trigger.target || (await this.getBrn(props, credentials));
-      return await this.removeTrigger({ credentials, props, functionBrn });
+      if(props.function.functionName){
+        const functionUrn = props.trigger.functionUrn || (await this.functionClient.getFunctionUrn(this.client));
+        this.triggerClient.functionUrn = functionUrn;
+      }
+      return await this.triggerClient.remove(this.client);
     }
     if (subCommand === 'help') {
       core.help(HELP.REMOVE);

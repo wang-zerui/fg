@@ -31,7 +31,8 @@ export interface FunctionInputProps {
     xrole?: string;
     app_xrole?: string,
     initializer_handler?: string,
-    initializer_timeout?: string
+    initializer_timeout?: string,
+    func_urn?: string
 }
 export class CreateFunctionRequestBody {
     public func_name: string;

@@ -1,21 +1,22 @@
-import { ICredentials } from '../interface/profile';
+import { FunctionInputProps } from './functionGraph/model/CreateFunctionRequestBody';
+import { FunctionGraphClient } from './functionGraph/FunctionGraphClient';
 export default class Function {
-    constructor({ endpoint, credentials }: {
-        endpoint: string;
-        credentials: ICredentials;
-    });
+    functionInfo: FunctionInputProps;
+    functionUrn?: string;
+    constructor(functionInfo: FunctionInputProps);
+    private handleInput;
     /**
      * 创建函数
      * @param props
      * @returns res
      * @returns functionBrn
      */
-    create(props: any): Promise<{
+    create(client: FunctionGraphClient, codeUri?: string): Promise<{
         res: {
             header: string;
             content: any[];
         }[];
-        functionBrn: any;
+        functionUrn: any;
     }>;
     /**
      * 更新代码
@@ -23,12 +24,12 @@ export default class Function {
      * @returns res
      * @returns functionBrn
      */
-    updateCode(props: any): Promise<{
+    updateCode(client: FunctionGraphClient, codeUri?: string): Promise<{
         res: {
             header: string;
             content: any[];
         }[];
-        functionBrn: any;
+        functionUrn: any;
     }>;
     /**
      * 更新配置
@@ -36,30 +37,40 @@ export default class Function {
      * @returns res
      * @returns functionBrn
      */
-    updateConfig(props: any): Promise<{
+    updateConfig(client: FunctionGraphClient): Promise<{
         res: {
             header: string;
             content: any[];
         }[];
-        functionBrn: any;
+        functionUrn: any;
     }>;
-    info(props: any): Promise<any>;
-    list(table?: boolean): Promise<any>;
-    remove(FunctionName: any): Promise<any>;
-    getConfig(props: any): Promise<void>;
+    list(client: FunctionGraphClient, table?: boolean): Promise<Array<any>>;
+    remove(client: FunctionGraphClient): Promise<any>;
     /**
      * 一些衍生方法
      */
     /**
      * Check function existance
      */
-    check(functionName: any): Promise<boolean>;
-    getBrnByFunctionName(functionName: any): Promise<any>;
+    check(client: FunctionGraphClient): Promise<boolean>;
+    /**
+     * 使用函数名获得func_urn
+     * @param functionName
+     * @param pkg
+     * @returns
+     */
+    getUrnByFunctionName(client: FunctionGraphClient): Promise<string>;
+    getFunctionUrn(client: FunctionGraphClient): Promise<string>;
+    /**
+     * 处理函数信息输出
+     * @param response
+     * @returns
+     */
     handleResponse(response: any): Promise<{
         res: {
             header: string;
             content: any[];
         }[];
-        functionBrn: any;
+        functionUrn: any;
     }>;
 }

@@ -6,7 +6,7 @@ import logger from '../../common/logger';
 import { FunctionInputProps } from './functionGraph/model/CreateFunctionRequestBody'
 import { CreateFunctionRequest } from './functionGraph/model/CreateFunctionRequest';
 import { CreateFunctionRequestBody } from './functionGraph/model/CreateFunctionRequestBody';
-import { FUNCTION_INFO_KEYS } from './functionGraph/model/FunctionInfo'
+// import { FUNCTION_INFO_KEYS } from './functionGraph/model/FunctionInfo'
 import { UpdateFunctionConfigRequestBody } from './functionGraph/model/UpdateFunctionConfigRequestBody';
 import { UpdateFunctionRequestBody } from './functionGraph/model/UpdateFunctionRequestBody';
 import { UpdateFunctionRequest } from './functionGraph/model/UpdateFunctionRequest';
@@ -110,6 +110,7 @@ export default class Function {
 
     const response = await Client.fgClient
       .updateFunctionConfig(new UpdateFunctionConfigRequest()
+        .withFunctionUrn(await this.getFunctionUrn(client))
         .withBody(body));
     
     if( response.status !== 200 ){
@@ -136,23 +137,23 @@ export default class Function {
       throw new Error("Getting function list error")
     }
     if (table) {
-      tableShow(data.functions, ['FunctionName', 'Description', 'UpdatedAt', 'LastModified', 'Region']);
-      return data.functions;
+      tableShow(data.data.functions, ['FunctionName', 'Description', 'UpdatedAt', 'LastModified', 'Region']);
+      return data.data.functions;
     } else {
-      return data.functions;
+      return data.data.functions;
     }
   }
 
   public async remove(client:FunctionGraphClient) {
     const func_urn = await this.getFunctionUrn(client);
-    const vm = core.spinner(`Function ${func_urn} deleting...`);
+    const vm = core.spinner(`Function ${this.functionInfo.func_name} deleting...`);
     
     const response = await client
       .deleteFunction(new DeleteFunctionRequest(func_urn))
     
     if ( response.status !== 200 ) {
-      vm.fail("Function delete failed.");
       logger.debug(JSON.stringify(response));
+      vm.fail(`Function ${this.functionInfo.func_name} delete failed.`)
       throw new Error(JSON.stringify(response.data))
     } else {
       logger.debug(JSON.stringify(response));
@@ -219,16 +220,20 @@ export default class Function {
   public async handleResponse(response: any) {
     logger.debug(`${response}`);
     let content = [];
-    for (let i of FUNCTION_INFO_KEYS) {
-      content.push({
-        desc: i,
-        example: `${response[i]}`,
-      });
+    let noNeedKeys = ['digest', 'last_modified', 'func_code', 'strategy_config', 'type', 'log_stream_id', 'log_group_id ', 'long_time'];
+    for (let i of Object.keys(response)) {
+      if(noNeedKeys.indexOf(i) < 0 && response[i]){
+        content.push({
+          desc: i,
+          example: `${response[i]}`,
+        });
+      }
     }
     content.push({
       desc: 'More',
       example: CONFIGS.dashBoardUrl
     });
+    
     logger.debug(`Calling Function response${JSON.stringify(content)}`);
     return {
       res: [

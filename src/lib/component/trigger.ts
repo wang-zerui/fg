@@ -5,6 +5,9 @@ import { ListTriggerRequest } from "./functionGraph/model/ListTriggerRequest";
 import { UpdateTriggerRequest } from "./functionGraph/model/UpdateTriggerRequest";
 import { UpdateTriggerRequestBody } from "./functionGraph/model/UpdateTriggerRequestBody";
 import logger from '../../common/logger';
+import { DeleteTriggerRequest } from "./functionGraph/model/DeleteTriggerRequest";
+const { setState, getState } = require('@serverless-devs/core');
+
 
 export const TRIGGER_TYPE_CODES = ['SMN', 'APIG', 'OBS', 'TIMER', 'DMS', 'DIS', 'LTS', 'DDS', 'CTS', 'kafka'];
 export const STATUSES = ['ACTIVE', 'DISABLED'];
@@ -33,10 +36,10 @@ export abstract class Trigger {
             functionUrn
         } = input;
 
-        if(!(triggerTypeCode in TRIGGER_TYPE_CODES)) {
+        if(TRIGGER_TYPE_CODES.indexOf(triggerTypeCode) < 0) {
             throw new Error("Invalid triggerTypeCode.");
         }
-        if(!(status in STATUSES)) {
+        if(STATUSES.indexOf(status) < 0) {
             throw new Error("Invalid status");
         }
         
@@ -59,7 +62,7 @@ export abstract class Trigger {
             .withTriggerTypeCode(this.triggerTypeCode)
             .withTriggerStatus(this.status)
             .withEventTypeCode(this.eventTypeCode)
-            .withEventData(this.getEventData)
+            .withEventData(this.getEventData())
         
         const response = await client.createTrigger(new CreateTriggerRequest()
             .withFunctionUrn(this.functionUrn)
@@ -67,6 +70,11 @@ export abstract class Trigger {
         if ( response.status !== 200 ) {
             throw new Error(JSON.stringify(response.data));
         }else{
+            const triggerId = response.data.trigger_id;
+            const triggerTypeCode = this.triggerTypeCode;
+            const functionUrn = this.functionUrn;
+            const c = await setState('state', {postTrigger:{ triggerId, triggerTypeCode, functionUrn }});
+            logger.debug("本地储存trigger信息" + JSON.stringify(c));
             return this.handleResponse(response.data);
         }
     }
@@ -110,10 +118,54 @@ export abstract class Trigger {
         }
     }
     
+    /**
+     * 删除触发器
+     * @param client 
+     */
     public async remove(client: FunctionGraphClient): Promise<any> {
-        logger.info("Dummy remove");
+        let triggerId: string;
+        let triggerTypeCode: string;
+        let functionUrn = this.functionUrn;
+        if(!this.triggerId){
+            const postTriggerInfo = (await getState('state')).postTrigger;
+            triggerId = postTriggerInfo.triggerId;
+            triggerTypeCode = postTriggerInfo.triggerTypeCode;
+            functionUrn = postTriggerInfo.functionUrn;
+            logger.info("Deleteing triggers created before.");
+        }
+        else{
+            triggerId = this.triggerId;
+            triggerTypeCode = this.triggerTypeCode;
+            logger.info("Deleteing triggers indicated in s.yaml");
+        }
+        const deleteTriggerRequest = new DeleteTriggerRequest()
+            .withFunctionUrn(functionUrn)
+            .withTriggerId(triggerId)
+            .withTriggerTypeCode(triggerTypeCode)
+        const response = await client.deleteTrigger(deleteTriggerRequest);
+        if (response.status !== 200 ){
+            throw new Error(JSON.stringify(response.data));
+        }else{
+            return response.data;
+        }
     }
 
+    /**
+     * 设置triggerId,某些业务（目前仅更新需要调用
+     * ））中需要调用该方法
+     * 先获得本地triggerId
+     * 再调用templateMethod获得可能的triggerId
+     * @returns 
+     */
+    public async setTriggerId(): Promise<any>{
+        const postTriggerInfo = (await getState('state')).postTrigger;
+        return postTriggerInfo.triggerId || null;
+    }
+
+    /**
+     * 虚函数，每个触发器根据信息获取触发器
+     * @param client 
+     */
     abstract getTriggerId(client: FunctionGraphClient): Promise<string>;
 
     /**
@@ -195,7 +247,7 @@ export class TriggerSMN extends Trigger{
         return this.eventData;
     }
 
-    public async getTriggerId(client: FunctionGraphClient): Promise<string>{
+    public async getTriggerId(client: FunctionGraphClient): Promise<string>{        
         const topicUrn = this.eventData.topicUrn;
         const trigger = (await this.list(client)).find(trigger => {return trigger.event_data.topic_urn == topicUrn})
         if(trigger.trigger_id){
@@ -484,9 +536,10 @@ export function getTriggerClient(props: any, functionUrn?: string): Trigger{
         triggerTypeCode: props.trigger.triggerTypeCode,
         eventTypeCode: props.trigger.eventTypeCode,
         status: props.trigger.staus || "ACTIVE",
-        functionUrn: functionUrn
+        functionUrn: functionUrn,
+        triggerId: props.trigger.triggerId || null
     }
-    const triggerTypeCode = props.triggerTypeCode;
+    const triggerTypeCode = props.trigger.triggerTypeCode;
     const eventData = props.trigger.eventData;
     if(triggerTypeCode === "DDS"){
         return new TriggerDDS(input, eventData);

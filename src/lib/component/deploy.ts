@@ -88,6 +88,7 @@ export default class deploy {
     //检查函数是否被创建
     const isCreated = await this.functionClient.check(this.client);
     if (isCreated) {
+      await this.functionClient.getUrnByFunctionName(this.client);
       await this.functionClient.updateConfig(this.client);
       return await this.functionClient.updateCode(this.client, props.function.codeUri);
     } else {
@@ -100,41 +101,63 @@ export default class deploy {
     return await this.triggerClient.create(this.client);
   }
 
-  public async deploy(props, subCommand: string, credentials:ICredentials) {
-    const functionInputs: FunctionInputProps = {
-      func_name: props.function.functionName,
-      handler: props.function.handler,
-      memory_size: props.function.memorySize,
-      timeout: props.function.timeout,
-      runtime: props.function.runtime,
-      pkg: props.function.package,
-      code_type: props.function.codeType,
-      code_filename: props.function.filename,
-      description: props.function.description,
-      enterprise_project_id: props.function.enterpriseProjectId,
-      xrole: props.function.xrole,
-      app_xrole: props.function.appXrole,
-      initializer_handler: props.function.initializerHandler,
-      initializer_timeout: props.function.initializerTimeout
+  public async deploy(props, subCommand: string) {
+    if(props.function){
+      const functionInputs: FunctionInputProps = {
+        func_name: props.function.functionName,
+        handler: props.function.handler,
+        memory_size: props.function.memorySize,
+        timeout: props.function.timeout,
+        runtime: props.function.runtime,
+        pkg: props.function.package,
+        code_type: props.function.codeType,
+        code_filename: props.function.filename,
+        description: props.function.description,
+        enterprise_project_id: props.function.enterpriseProjectId,
+        xrole: props.function.xrole,
+        app_xrole: props.function.appXrole,
+        initializer_handler: props.function.initializerHandler,
+        initializer_timeout: props.function.initializerTimeout
+      }
+      this.functionClient = new Function(functionInputs);
     }
-    this.functionClient = new Function(functionInputs);
-    this.triggerClient = getTriggerClient(props);
+    if(props.trigger){
+      this.triggerClient = getTriggerClient(props);
+    }
 
     if (subCommand === 'all') {
-      const functionInfo = await this.deployFunction(props);
-      // 如果用户提供了functionUrn，则优先使用用户提供的functionUrn
-      const functionUrn = props.trigger.functionUrn || functionInfo.functionUrn;
+      let functionInfo: any;
+      let triggerInfo: any;
+      let functionUrn: string;
+      if(props.function){
+        functionInfo = await this.deployFunction(props);
+        // 如果用户提供了functionUrn，则优先使用用户提供的functionUrn
+        functionUrn = props.trigger.functionUrn || functionInfo.functionUrn;
+      }
+      
       if (props.trigger) {
-        const triggerInfo = await this.deployTrigger(props, functionUrn);
+        triggerInfo = await this.deployTrigger(props, functionUrn);
         return functionInfo.res.concat(triggerInfo);
       } else {
+        if(!functionInfo.res){
+          return "Deployed noting."
+        }
         return functionInfo.res;
       }
     }
     if (subCommand === 'function') {
+      if(!props.function){
+        throw new Error("Missing function configuration.");
+      }
       return (await this.deployFunction(props)).res;
     }
     if (subCommand === 'trigger') {
+      if(!props.trigger){
+        throw new Error("Missing trigger configuration.");
+      }
+      if(!props.function.functionName){
+        throw new Error("Missing function name. Please enter your function name or provide the functionUrn in trigger configuration in s.yaml.")
+      }
       const functionUrn = props.trigger.functionUrn || (await this.functionClient.getFunctionUrn(this.client));
       return await this.deployTrigger(props, functionUrn);
     }

@@ -9,6 +9,5 @@ export default class Client {
         .withSk(credentials.SecretAccessKey)
         .withProjectId(projectId)
         .withEndpoint(endpoint)
-
   }
 }

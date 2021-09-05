@@ -1,43 +1,41 @@
 import { ICredentials } from '../interface/profile';
-export default class remove {
+import { Trigger } from './trigger';
+import Function from './function';
+export default class Remove {
+    functionClient: Function;
+    triggerClient: Trigger;
+    private client;
     static handleInputs(inputs: any): Promise<{
         errorMessage: string;
         help?: undefined;
         subCommand?: undefined;
         endpoint?: undefined;
+        projectId?: undefined;
         credentials?: undefined;
         props?: undefined;
         args?: undefined;
+        table?: undefined;
     } | {
         help: boolean;
         subCommand: any;
         errorMessage?: undefined;
         endpoint?: undefined;
+        projectId?: undefined;
         credentials?: undefined;
         props?: undefined;
         args?: undefined;
+        table?: undefined;
     } | {
-        endpoint: string;
+        endpoint: any;
+        projectId: any;
         credentials: ICredentials;
         subCommand: any;
         props: any;
         args: any;
+        table: any;
         errorMessage?: undefined;
         help?: undefined;
     }>;
-    constructor({ credentials }: {
-        credentials: ICredentials;
-    });
-    removeFunction({ endpoint, credentials, functionName }: {
-        endpoint: any;
-        credentials: any;
-        functionName: any;
-    }): Promise<any>;
-    removeTrigger({ credentials, props, functionBrn }: {
-        credentials: any;
-        props: any;
-        functionBrn: any;
-    }): Promise<any>;
-    getBrn(props: any, credentials: any): Promise<any>;
-    remove(endpoint: any, props: any, subCommand: any, credentials: any): Promise<any>;
+    constructor(credentials: ICredentials, projectId: string, endpoint: string);
+    remove(props: any, subCommand: any): Promise<any>;
 }

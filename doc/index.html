@@ -58,24 +58,59 @@
 	<div class="row">
 		<div class="col-8 col-content">
 			<div class="tsd-panel tsd-typography">
+				<a href="#华为云函数计算（fg）组件" id="华为云函数计算（fg）组件" style="color: inherit; text-decoration: none;">
+					<h1>华为云函数计算（FG）组件</h1>
+				</a>
 				<a href="#组件说明" id="组件说明" style="color: inherit; text-decoration: none;">
 					<h2>组件说明</h2>
 				</a>
-				<a href="#使用场景" id="使用场景" style="color: inherit; text-decoration: none;">
-					<h2>使用场景</h2>
+				<p><a href="https://github.com/xinwuyun/fg">华为云函数组件</a>是一个用于支持华为云函数应用生性周期的工具，基于<a href="https://www.serverless-devs.com/">Serverless Devs</a>进行开发，通过配置资源配置文件<code>s.yaml</code>，您可以简单快速地部署应用到<a href="https://console.huaweicloud.com/functiongraph/#/serverless/dashboard">华为云函数计算平台</a>。</p>
+				<p>本组件使用<a href="./docs/Others/yaml.md">YAML规范</a>（<code>s.yaml</code>）定义Serverless资源，定义了您的应用的函数、触发器等资源的配置。</p>
+				<a href="#快速开始" id="快速开始" style="color: inherit; text-decoration: none;">
+					<h2>快速开始</h2>
 				</a>
-				<a href="#具体用法" id="具体用法" style="color: inherit; text-decoration: none;">
-					<h2>具体用法</h2>
-				</a>
-				<a href="#s-cli-方式" id="s-cli-方式" style="color: inherit; text-decoration: none;">
-					<h3>s cli 方式</h3>
-				</a>
-				<pre><code><span style="color: #001080">s</span><span style="color: #000000"> </span><span style="color: #001080">cli</span><span style="color: #000000"> &lt;</span><span style="color: #001080">componentname</span><span style="color: #000000">&gt; -</span><span style="color: #001080">d</span>
+				<pre><code class="language-shell"><span style="color: #000000">$ git clone https://github.com/xinwuyun/fg</span>
+<span style="color: #000000">$ </span><span style="color: #795E26">cd</span><span style="color: #000000"> cfc/example</span>
+<span style="color: #000000">$ s deploy</span>
 </code></pre>
-				<a href="#应用编排使用方式" id="应用编排使用方式" style="color: inherit; text-decoration: none;">
-					<h3>应用编排使用方式</h3>
+				<p>为了让您更好地体验阿里云函数计算组件，您可以参考<a href="./docs/Getting-started/Hello-world-application.md">快速入门文档</a></p>
+				<a href="#文档目录" id="文档目录" style="color: inherit; text-decoration: none;">
+					<h2>文档目录</h2>
 				</a>
-				<p>查看 example 下 s.yaml</p>
+				<ul>
+					<li><a href="./docs/Getting-started/getting-started.md">入门相关</a><ul>
+							<li><a href="./docs/Getting-started/install.md">开发工具安装</a></li>
+							<li><a href="./docs/Getting-started/config.md">账号配置</a></li>
+							<li><a href="./docs/Getting-started/Hello-world-application.md">快速体验</a></li>
+						</ul>
+					</li>
+					<li>指令使用方法<ul>
+							<li><a href="./docs/Usage/deploy.md">部署操作：Deploy</a></li>
+							<li><a href="./docs/Usage/remove.md">移除操作：Remove</a></li>
+						</ul>
+					</li>
+				</ul>
+				<a href="#更多案例" id="更多案例" style="color: inherit; text-decoration: none;">
+					<h2>更多案例</h2>
+				</a>
+				<p><a href="https://github.com/xinwuyun/start-fg">start-cfc</a></p>
+				<a href="#问题反馈" id="问题反馈" style="color: inherit; text-decoration: none;">
+					<h2>问题反馈</h2>
+				</a>
+				<p>如您在使用中遇到问题，可以在<a href="https://github.com/xinwuyun/fg/issues">这里反馈</a></p>
+				<a href="#todo" id="todo" style="color: inherit; text-decoration: none;">
+					<h2>TODO</h2>
+				</a>
+				<ul>
+					<li><input checked="" disabled="" type="checkbox"> 完成<code>function.ts</code></li>
+					<li><input disabled="" type="checkbox"> 完成<code>trigger.ts</code></li>
+					<li><input disabled="" type="checkbox"> 完成<code>deploy.ts</code></li>
+					<li><input disabled="" type="checkbox"> 完成<code>remove.ts</code></li>
+				</ul>
+				<a href="#感觉" id="感觉" style="color: inherit; text-decoration: none;">
+					<h2>感觉</h2>
+				</a>
+				<p>感觉应该按照面向对象全重写一遍</p>
 			</div>
 		</div>
 		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">

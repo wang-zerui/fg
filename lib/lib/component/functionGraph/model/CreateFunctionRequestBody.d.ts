@@ -1,0 +1,50 @@
+export interface FunctionInputProps {
+    func_name: string;
+    handler: string;
+    memory_size: number;
+    timeout: number;
+    runtime: string;
+    pkg: string;
+    code_type: string;
+    code_filename?: string;
+    func_code?: any;
+    description?: string;
+    enterprise_project_id?: string;
+    xrole?: string;
+    app_xrole?: string;
+    initializer_handler?: string;
+    initializer_timeout?: string;
+    func_urn?: string;
+}
+export declare class CreateFunctionRequestBody {
+    func_name: string;
+    handler: string;
+    memory_size: number;
+    timeout: number;
+    runtime: string;
+    package: string;
+    code_type: string;
+    code_filename?: string;
+    func_code?: any;
+    description?: string;
+    enterprise_project_id?: string;
+    xrole?: string;
+    app_xrole?: string;
+    initializer_handler?: string;
+    initializer_timeout?: string;
+    constructor(input: FunctionInputProps);
+    withFunctionName(func_name: string): CreateFunctionRequestBody;
+    withHandler(handler: string): CreateFunctionRequestBody;
+    withMemorySize(memory_size: number): CreateFunctionRequestBody;
+    withTimeout(timeout: number): CreateFunctionRequestBody;
+    withRuntime(runtime: string): CreateFunctionRequestBody;
+    withpkg(pkg: string): CreateFunctionRequestBody;
+    withCodeType(code_type: string): CreateFunctionRequestBody;
+    withCodeFileName(code_filename: string): CreateFunctionRequestBody;
+    withFunctionCode(functionCode: string): CreateFunctionRequestBody;
+    withEnterpriseProjectId(enterprise_project_id: string): CreateFunctionRequestBody;
+    withAppXrole(app_xrole: string): CreateFunctionRequestBody;
+    withInitializerHandler(initializer_handler: string): CreateFunctionRequestBody;
+    withInitializerTimeout(initializer_timeout: string): CreateFunctionRequestBody;
+    withDescription(des: string): CreateFunctionRequestBody;
+}

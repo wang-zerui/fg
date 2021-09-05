@@ -1,4 +1,3 @@
-import { CreateTriggerRequest } from "./CreateTriggerRequest";
 
 export class CreateTriggerRequestBody {
     public trigger_type_code?: string;

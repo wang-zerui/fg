@@ -17,7 +17,8 @@
     "declaration": true,
     "typeRoots": ["./typings", "./node_modules/@types"],
     "rootDir": "src",
-    "outDir": "lib"
+    "outDir": "lib",
+    "allowJs": true
   },
   "exclude": ["node_modules", "dist", "test"],
   "include": ["./src/**/*.ts", "src/**/*.json"]

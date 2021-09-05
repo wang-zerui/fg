@@ -549,7 +549,6 @@ export class RequiredError extends Error {
  */
 function sign(options: any, client:FunctionGraphClient) {
     let signer = require('./signer');
-    let https = require('https');
     let sig = new signer.Signer();
 
     sig.Key = client.ak;
