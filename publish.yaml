@@ -1,17 +1,80 @@
 Type: Component
 Name: yaml
-Version: 0.0.1
+Version: 0.01
 Category: 云应用
 HomePage: 'https://github.com/xinwuyun/cfc'
 Description: 百度云函数组件
 Properties:
-  code:
-    Description: 代码信息
+  projectId:
+    Description: 项目ID
     Required: true
-    Example: ''
-    Default: ''
-    Type:
-      - Struct: {}
+    Type: 
+      - String
+  function:
+    functionName:
+      Description: 函数名
+      Required: true
+      Type:
+        - String
+    description:
+      Description: 函数描述
+      Requeired: false
+      Default: serverless-devs函数应用
+      Type:
+        - String
+    handler:
+      Description: 处理程序
+      Required: true
+      Type:
+        - String
+    memorySize:
+      Description: 内存
+      Required: true
+      Default: 128
+      Type:
+        - Number
+    timeout:
+      Description: 超时时间
+      Required: true
+      Default: 30
+      Type:
+        - Number
+    runtime:
+      Description: 运行环境
+      Required: true
+      Type:
+        - String
+    package:
+      Description: 应用
+      Required: false
+      Default: default
+      Type:
+        - String
+    cpu:
+
+    codeType:
+      Description: 代码类型
+      Required: true
+      Default: zip
+      Type:
+        - Enum:
+          - 
+    codeFilename:
+    enterpriseProjectId:
+    xrole:
+    appXrole:
+    initializerHandler:
+    initializerTimeout:
+    functionUrn:
+    code:
+      codeUri:
+    
+  trigger:
+    triggerTypeCode:
+    eventTypeCode:
+    status:
+    eventData:
+      
   functionName:
     Description: 函数名
     Required: true
