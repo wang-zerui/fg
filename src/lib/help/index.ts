@@ -1,17 +1,18 @@
 export const COMPONENT_HELP_INFO = [
   {
-    header: 'cfc component',
-    content: 'You can use the component to manager and develop your baiducloud function computer resources.',
+    header: "cfc component",
+    content:
+      "You can use the component to manager and develop your baiducloud function computer resources.",
   },
   {
-    header: 'Usage',
-    content: '$ s <command> <options>',
+    header: "Usage",
+    content: "$ s <command> <options>",
   },
   {
-    header: 'Command List',
+    header: "Command List",
     content: [
-      { name: 'help', summary: 'Display help information.' },
-      { name: 'deploy', summary: 'Deploy serverless application.' },
+      { name: "help", summary: "Display help information." },
+      { name: "deploy", summary: "Deploy serverless application." },
       // { name: 'remove', summary: 'Remove serverless application.' },
       // { name: 'local', summary: 'Local debug serverless application.' },
       // { name: 'info', summary: 'Get information of alicloud function computer resources.' },
@@ -28,18 +29,23 @@ export const COMPONENT_HELP_INFO = [
     ],
   },
   {
-    header: 'Global Options',
+    header: "Global Options",
     optionList: [
       {
-        name: 'assumeYes',
-        description: 'Assume that the answer to any question which would be asked is yes.',
-        alias: 'y',
+        name: "assumeYes",
+        description:
+          "Assume that the answer to any question which would be asked is yes.",
+        alias: "y",
         type: Boolean,
       },
     ],
   },
   {
-    header: 'Examples with Yaml',
-    content: ['$ cfc {bold deploy} --help', '$ cfc {bold remove} --help', '$ cfc {bold help}'],
+    header: "Examples with Yaml",
+    content: [
+      "$ cfc {bold deploy} --help",
+      "$ cfc {bold remove} --help",
+      "$ cfc {bold help}",
+    ],
   },
 ];

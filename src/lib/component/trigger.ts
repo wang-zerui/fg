@@ -4,259 +4,345 @@ import { CreateTriggerRequestBody } from "./functionGraph/model/CreateTriggerReq
 import { ListTriggerRequest } from "./functionGraph/model/ListTriggerRequest";
 import { UpdateTriggerRequest } from "./functionGraph/model/UpdateTriggerRequest";
 import { UpdateTriggerRequestBody } from "./functionGraph/model/UpdateTriggerRequestBody";
-import logger from '../../common/logger';
+import logger from "../../common/logger";
 import { DeleteTriggerRequest } from "./functionGraph/model/DeleteTriggerRequest";
-const { setState, getState } = require('@serverless-devs/core');
+const { setState, getState } = require("@serverless-devs/core");
 
-
-export const TRIGGER_TYPE_CODES = ['SMN', 'APIG', 'OBS', 'TIMER', 'DMS', 'DIS', 'LTS', 'DDS', 'CTS', 'kafka'];
-export const STATUSES = ['ACTIVE', 'DISABLED'];
+export const TRIGGER_TYPE_CODES = [
+  "SMN",
+  "APIG",
+  "OBS",
+  "TIMER",
+  "DMS",
+  "DIS",
+  "LTS",
+  "DDS",
+  "CTS",
+  "kafka",
+];
+export const STATUSES = ["ACTIVE", "DISABLED"];
 
 export interface TriggerInputProps {
-    triggerId?: string,
-    triggerTypeCode: string,
-    eventTypeCode: string,
-    status: string,
-    functionUrn?: string
+  triggerId?: string;
+  triggerTypeCode: string;
+  eventTypeCode: string;
+  status: string;
+  functionUrn?: string;
+}
+
+export interface LocalTriggerInfo {
+  triggerId: string;
+  triggerTypeCode: string;
+  functionUrn: string;
 }
 
 export abstract class Trigger {
-    public triggerId?: string;
-    public triggerTypeCode: string;
-    public eventTypeCode: string;
-    public status: string;
-    public functionUrn?: string;
-    public constructor(input: TriggerInputProps){
+  public triggerId?: string;
+  public triggerTypeCode: string;
+  public eventTypeCode: string;
+  public status: string;
+  public functionUrn?: string;
+  public constructor(input: TriggerInputProps) {
+    const { triggerId, triggerTypeCode, eventTypeCode, status, functionUrn } =
+      input;
 
-        const {
-            triggerId,
-            triggerTypeCode,
-            eventTypeCode,
-            status,
-            functionUrn
-        } = input;
-
-        if(TRIGGER_TYPE_CODES.indexOf(triggerTypeCode) < 0) {
-            throw new Error("Invalid triggerTypeCode.");
-        }
-        if(STATUSES.indexOf(status) < 0) {
-            throw new Error("Invalid status");
-        }
-        
-        this['triggerId'] = triggerId;
-        this['triggerTypeCode'] = triggerTypeCode;
-        this['status'] = status;
-        this['eventTypeCode'] = eventTypeCode;
-        this['functionUrn'] = functionUrn;
+    if (TRIGGER_TYPE_CODES.indexOf(triggerTypeCode) < 0) {
+      throw new Error("Invalid triggerTypeCode.");
     }
-    abstract getEventData():object;
-
-    /**
-     * 创建触发器
-     * @param client FunctionGraphClient
-     * @param functionUrn 函数代号
-     * @returns 
-     */
-    public async create(client:FunctionGraphClient): Promise<any> {
-        const body = new CreateTriggerRequestBody()
-            .withTriggerTypeCode(this.triggerTypeCode)
-            .withTriggerStatus(this.status)
-            .withEventTypeCode(this.eventTypeCode)
-            .withEventData(this.getEventData())
-        
-        const response = await client.createTrigger(new CreateTriggerRequest()
-            .withFunctionUrn(this.functionUrn)
-            .withBody(body))
-        if ( response.status !== 200 ) {
-            throw new Error(JSON.stringify(response.data));
-        }else{
-            const triggerId = response.data.trigger_id;
-            const triggerTypeCode = this.triggerTypeCode;
-            const functionUrn = this.functionUrn;
-            const c = await setState('state', {postTrigger:{ triggerId, triggerTypeCode, functionUrn }});
-            logger.debug("本地储存trigger信息" + JSON.stringify(c));
-            return this.handleResponse(response.data);
-        }
+    if (STATUSES.indexOf(status) < 0) {
+      throw new Error(`Invalid status, only accept "DISABLED" and "ACTIVE".`);
     }
 
-    /**
-     * 获取触发器列表
-     * @param client 
-     * @param functionUrn 
-     * @returns 
-     */
-    public async list(client: FunctionGraphClient): Promise<Array<any>> {
-        const response = await client.listTrigger(new ListTriggerRequest()
-            .withFunctionUrn(this.functionUrn))
-        if (response.status !== 200 ){
-            throw new Error(JSON.stringify(response.data));
-        }else{
-            return response.data;
-        }
-    }
+    this["triggerId"] = triggerId;
+    this["triggerTypeCode"] = triggerTypeCode;
+    this["status"] = status;
+    this["eventTypeCode"] = eventTypeCode;
+    this["functionUrn"] = functionUrn;
+  }
+  abstract getEventData(): object;
 
-    /**
-     * 更新触发器
-     * @param Client
-     * @param functionUrn
-     * @returns 
-     */
-    //@ts-ignore
-    private async update(client: FunctionGraphClient): Promise<any> {
-        const body = new UpdateTriggerRequestBody()
-            .withTriggerStatus(this.status);
-        
-        const response = await client.updateTrigger(new UpdateTriggerRequest()
-            .withTriggerId(await this.getTriggerId(client))
-            .withFunctionUrn(this.functionUrn)
-            .withTriggerTypeCode(this.triggerTypeCode)
-            .withBody(body))
-        if (response.status !== 200 ){
-            throw new Error(JSON.stringify(response.data));
-        }else{
-            return response.data;
-        }
-    }
-    
-    /**
-     * 删除触发器
-     * @param client 
-     */
-    public async remove(client: FunctionGraphClient): Promise<any> {
-        let triggerId: string;
-        let triggerTypeCode: string;
-        let functionUrn = this.functionUrn;
-        if(!this.triggerId){
-            const postTriggerInfo = (await getState('state')).postTrigger;
-            triggerId = postTriggerInfo.triggerId;
-            triggerTypeCode = postTriggerInfo.triggerTypeCode;
-            functionUrn = postTriggerInfo.functionUrn;
-            logger.info("Deleteing triggers created before.");
-        }
-        else{
-            triggerId = this.triggerId;
-            triggerTypeCode = this.triggerTypeCode;
-            logger.info("Deleteing triggers indicated in s.yaml");
-        }
-        const deleteTriggerRequest = new DeleteTriggerRequest()
-            .withFunctionUrn(functionUrn)
-            .withTriggerId(triggerId)
-            .withTriggerTypeCode(triggerTypeCode)
-        const response = await client.deleteTrigger(deleteTriggerRequest);
-        if (response.status !== 200 ){
-            throw new Error(JSON.stringify(response.data));
-        }else{
-            return response.data;
-        }
-    }
+  /**
+   * 创建触发器
+   * @param client {FunctionGraphClient}
+   * @returns res {Object} 函数信息
+   * @returns functionUrn {string} 函数Urn
+   */
+  public async create(client: FunctionGraphClient): Promise<any> {
+    const body = new CreateTriggerRequestBody()
+      .withTriggerTypeCode(this.triggerTypeCode)
+      .withTriggerStatus(this.status)
+      .withEventTypeCode(this.eventTypeCode)
+      .withEventData(this.getEventData());
+   
+    logger.debug(Object.assign({}, body));
+    const response = await client.createTrigger(
+      new CreateTriggerRequest()
+        .withFunctionUrn(this.functionUrn)
+        .withBody(body)
+    );
 
-    /**
-     * 设置triggerId,某些业务（目前仅更新需要调用
-     * ））中需要调用该方法
-     * 先获得本地triggerId
-     * 再调用templateMethod获得可能的triggerId
-     * @returns 
-     */
-    public async setTriggerId(): Promise<any>{
-        const postTriggerInfo = (await getState('state')).postTrigger;
-        return postTriggerInfo.triggerId || null;
+    if (response.status !== 200) {
+      //TODO:需要更友好的错误输出
+      
+      //throw new Error(JSON.stringify(response.data));
+    } else {
+      const triggerId = response.data.trigger_id;
+      const triggerTypeCode = this.triggerTypeCode;
+      const functionUrn = this.functionUrn;
+      setLocalTriggerInfo({triggerId, triggerTypeCode, functionUrn});
+      return this.handleResponse(response.data);
     }
+  }
 
-    /**
-     * 虚函数，每个触发器根据信息获取触发器
-     * @param client 
-     */
-    abstract getTriggerId(client: FunctionGraphClient): Promise<string>;
-
-    /**
-     * 处理返回
-     * @param response 
-     * @returns 
-     */
-    public handleResponse(response){
-        let triggerInfo = [
-            {
-                desc: "TriggerId",
-                example: response.trigger_id
-            },
-            {
-                desc: "TriggerTypeCode",
-                example: response.trigger_type_code
-            },
-            {
-                desc: "TriggerStatus",
-                example: response.trigger_status
-            }
-        ];
-        let eventDataInfo = [];
-        for (let key of Object.keys(response.event_data)){
-            eventDataInfo.push({
-                desc: key,
-                example: response.event_data[key]
-            })
-        }
-        return [
-            {
-                header: 'Trigger',
-                content: triggerInfo
-            },
-            {
-                header: 'Trigger event data',
-                content: eventDataInfo
-            }
-        ]
+  /**
+   * 获取触发器列表
+   * @param client
+   * @returns triggers {Array<any>} 该函数下的所有函数信息
+   */
+  public async list(client: FunctionGraphClient): Promise<Array<any>> {
+    const response = await client.listTrigger(
+      new ListTriggerRequest().withFunctionUrn(this.functionUrn)
+    );
+    if (response.status !== 200) {
+      throw new Error(JSON.stringify(response.data));
+    } else {
+      return response.data;
     }
+  }
+
+  /**
+   * 更新触发器
+   * @param Client
+   * @param functionUrn
+   * @returns
+   */
+  private async update(client: FunctionGraphClient): Promise<any> {
+    const body = new UpdateTriggerRequestBody().withTriggerStatus(this.status);
+
+    const response = await client.updateTrigger(
+      new UpdateTriggerRequest()
+        .withTriggerId(await this.getTriggerId(client))
+        .withFunctionUrn(this.functionUrn)
+        .withTriggerTypeCode(this.triggerTypeCode)
+        .withBody(body)
+    );
+    if (response.status !== 200) {
+      //TODO:需要更友好的错误输出
+      throw new Error(JSON.stringify(response.data));
+    } else {
+      return response.data;
+    }
+  }
+
+  /**
+   * 删除触发器
+   * @param client
+   */
+  public async remove(client: FunctionGraphClient): Promise<any> {
+    let triggerId: string;
+    let triggerTypeCode: string;
+    let functionUrn = this.functionUrn;
+    if (!this.triggerId) {
+      const {
+        triggerId,
+        triggerTypeCode,
+        functionUrn
+      } = this.getLocalTriggerInfo();
+      // 如果没有本地记录直接返回
+      if(!triggerId) {
+        logger.error("Delete nothing. No trigger created before.")
+        return;
+      }
+      logger.info("Deleteing trigger created before.");
+    } else {
+      triggerId = this.triggerId;
+      triggerTypeCode = this.triggerTypeCode;
+      logger.info("Deleteing trigger indicated in s.yaml");
+    }
+    const deleteTriggerRequest = new DeleteTriggerRequest()
+      .withFunctionUrn(functionUrn)
+      .withTriggerId(triggerId)
+      .withTriggerTypeCode(triggerTypeCode);
+    const response = await client.deleteTrigger(deleteTriggerRequest);
+    if (response.status !== 200) {
+      // TODO:需要更有好的错误输出
+      throw new Error(JSON.stringify(response.data));
+    } else {
+      return response.data;
+    }
+  }
+
+  /**
+   * 设置triggerId,某些业务（目前仅更新需要调用
+   * 中需要调用该方法)
+   * 先获得本地triggerId
+   * 再调用templateMethod获得可能的triggerId
+   * @returns
+   */
+  public async setTriggerId(triggerId?: string) {
+    const Id = triggerId || (await getState("state")).postTrigger.triggerId;
+    this.triggerId = Id;
+  }
+
+  /**
+   * 设置本地触发器信息
+   */
+  public async setLocalTriggerInfo(localTriggerInfo: LocalTriggerInfo) {
+    setState("localTriggerInfo", localTriggerInfo);
+  }
+
+  /**
+   * 获取本地触发器信息
+   */
+  public async getLocalTriggerInfo(): Promise<LocalTriggerInfo> {
+    return await getState("localTriggerInfo");
+  }
+
+  /**
+   * 暂时不使用
+   * 虚函数，每个触发器根据信息获取触发器ID
+   * @param client
+   */
+  abstract getTriggerId(client: FunctionGraphClient): Promise<string>;
+
+  /**
+   * 处理返回
+   * @param response
+   * @returns
+   */
+  public handleResponse(response) {
+    let triggerInfo = [
+      {
+        desc: "TriggerId",
+        example: response.trigger_id,
+      },
+      {
+        desc: "TriggerTypeCode",
+        example: response.trigger_type_code,
+      },
+      {
+        desc: "TriggerStatus",
+        example: response.trigger_status,
+      },
+    ];
+    let eventDataInfo = [];
+    for (let key of Object.keys(response.event_data)) {
+      eventDataInfo.push({
+        desc: key,
+        example: response.event_data[key],
+      });
+    }
+    return [
+      {
+        header: "Trigger",
+        content: triggerInfo,
+      },
+      {
+        header: "Trigger event data",
+        content: eventDataInfo,
+      },
+    ];
+  }
 }
 
 interface SMNEventData {
-    topicUrn: string, //SMN服务的topic_urn，创建时必填。唯一
-    subscriptionStatus: string //topic_urn的订阅状态：Unconfirmed / Confirmed。
+  topicUrn: string; //SMN服务的topic_urn，创建时必填。唯一
+  subscriptionStatus: string; //topic_urn的订阅状态：Unconfirmed / Confirmed。
 }
 
 interface CTSEventData {
-    name: string,
-    operations: string
+  name: string;
+  operations: string;
 }
 
 interface DDSEventData {
-    instanceId: string,
-    collectionName: string,
-    dbName: string,
-    dbPassword: string,
-    batchSize: Array<string>
+  instanceId: string;
+  collectionName: string;
+  dbName: string;
+  dbPassword: string;
+  batchSize: Array<string>;
 }
 
 interface KAFKAEventData {
-    instance_id: string,
-	db_name: string,
-    collection_name: string,
-    db_user: string,
-	db_password: string,
-    batch_size: number,
+  instance_id: string;
+  db_name: string;
+  collection_name: string;
+  db_user: string;
+  db_password: string;
+  batch_size: number;
 }
 
-export class TriggerSMN extends Trigger{
-    public eventData: SMNEventData;
+interface DISEventData {
+  streamName: string;
+  sharditeratorType: string;
+  batchSize?: number;
+  pollingInterval?: number;
+}
 
-    public constructor(input: TriggerInputProps, eventData: SMNEventData) {
-        super(input);
-        this['eventData'] = eventData;
-    }
-    
-    public getEventData():object {
-        return this.eventData;
-    }
+interface APIGEventData {
+  groupId: string;
+  envId: string;
+  auth: string;
+  protocol: string;
+  name: string;
+  path: string;
+  matchMode: string;
+  reqMethod: string;
+  backendType: string;
+  type: number;
+  slDomain: string;
+  instanceId: string;
+}
 
-    public async getTriggerId(client: FunctionGraphClient): Promise<string>{        
-        const topicUrn = this.eventData.topicUrn;
-        const trigger = (await this.list(client)).find(trigger => {return trigger.event_data.topic_urn == topicUrn})
-        if(trigger.trigger_id){
-            this.triggerId = trigger.trigger_id;  
-            return this.triggerId;
-        }else{
-            return null;
-        }
+interface LTSEventData {
+  groupId: string;
+  topicId: string;
+}
+
+interface TIMEREventData {
+  name: string;
+  scheduleType: string;
+  schedule: string;
+  userEvent?: string;
+}
+
+interface OBSEventData {
+  bucket: string;
+  events: Array<string>;
+  prefix?: string;
+  suffix?: string;
+}
+interface OBSEventData {
+  bucket: string;
+  events: Array<string>;
+  prefix?: string;
+  suffix?: string;
+}
+
+export class TriggerSMN extends Trigger {
+  public eventData: SMNEventData;
+
+  public constructor(input: TriggerInputProps, eventData: SMNEventData) {
+    super(input);
+    this["eventData"] = eventData;
+  }
+
+  public getEventData(): object {
+    return this.eventData;
+  }
+
+  public async getTriggerId(client: FunctionGraphClient): Promise<string> {
+    const topicUrn = this.eventData.topicUrn;
+    const trigger = (await this.list(client)).find((trigger) => {
+      return trigger.event_data.topic_urn == topicUrn;
+    });
+    if (trigger.trigger_id) {
+      this.triggerId = trigger.trigger_id;
+      return this.triggerId;
+    } else {
+      return null;
     }
+  }
 }
 
 // interface DMSEventData {
@@ -271,293 +357,263 @@ export class TriggerSMN extends Trigger{
 //         super(input);
 //         this['eventData'] = eventData;
 //     }
-    
+
 //     public getEventData():object {
 //         return this.eventData;
 //     }
 // }
 
-interface DISEventData {
-    streamName: string,
-    sharditeratorType: string,
-    batchSize?: number,
-    pollingInterval?: number
+export class TriggerDIS extends Trigger {
+  public eventData: DISEventData;
+
+  public constructor(input: TriggerInputProps, eventData: DISEventData) {
+    super(input);
+    this["eventData"] = eventData;
+  }
+
+  public getEventData(): object {
+    return this.eventData;
+  }
+
+  public async getTriggerId(client: FunctionGraphClient): Promise<string> {
+    if (this.triggerId) {
+      return this.triggerId;
+    }
+    const triggers = await this.list(client);
+    const eventData = this.eventData;
+    const trigger = triggers.find((trigger) => {
+      return trigger.event_data.streamName == eventData.streamName;
+    });
+    if (trigger.trigger_id) {
+      this.triggerId = trigger.trigger_id;
+      return this.triggerId;
+    } else {
+      return null;
+    }
+  }
 }
 
-export class TriggerDIS extends Trigger{
-    public eventData: DISEventData;
+export class TriggerAPIG extends Trigger {
+  public eventData: APIGEventData;
 
-    public constructor(input: TriggerInputProps, eventData: DISEventData) {
-        super(input);
-        this['eventData'] = eventData;
-    }
-    
-    public getEventData():object {
-        return this.eventData;
-    }
+  public constructor(input: TriggerInputProps, eventData: APIGEventData) {
+    super(input);
+    this["eventData"] = eventData;
+  }
 
-    public async getTriggerId(client:FunctionGraphClient): Promise<string> {
-        if(this.triggerId){
-            return this.triggerId;
-        }
-        const triggers = await this.list(client);
-        const eventData = this.eventData;
-        const trigger = triggers.find(trigger => {
-            return trigger.event_data.streamName == eventData.streamName
-        })
-        if(trigger.trigger_id){
-            this.triggerId = trigger.trigger_id;  
-            return this.triggerId;
-        }else{
-            return null;
-        }
-    }
+  public getEventData(): object {
+    return this.eventData;
+  }
 
+  public async getTriggerId(client: FunctionGraphClient): Promise<string> {
+    if (this.triggerId) {
+      return this.triggerId;
+    }
+    const triggers = await this.list(client);
+    const eventData = this.eventData;
+    const trigger = triggers.find((trigger) => {
+      return (
+        trigger.event_data.streamName === eventData.groupId &&
+        trigger.event_data.env_id === eventData.envId
+      );
+    });
+    if (trigger.trigger_id) {
+      this.triggerId = trigger.trigger_id;
+      return this.triggerId;
+    } else {
+      return null;
+    }
+  }
 }
 
-interface APIGEventData {
-    groupId:string, 
-    envId:string, 
-    auth:string, 
-    protocol:string, 
-    name:string, 
-    path:string, 
-    matchMode:string,  
-    reqMethod:string , 
-    backendType:string , 
-    type: number,  
-    slDomain:string , 
-    instanceId:string 
+export class TriggerTIMER extends Trigger {
+  public eventData: TIMEREventData;
+
+  public constructor(input: TriggerInputProps, eventData: TIMEREventData) {
+    super(input);
+    this["eventData"] = eventData;
+  }
+
+  public getEventData(): object {
+    return this.eventData;
+  }
+
+  public async getTriggerId(client: FunctionGraphClient): Promise<string> {
+    if (this.triggerId) {
+      return this.triggerId;
+    }
+    const triggers = await this.list(client);
+    const eventData = this.eventData;
+    const trigger = triggers.find((trigger) => {
+      return trigger.event_data.name === eventData.name;
+    });
+    if (trigger.trigger_id) {
+      this.triggerId = trigger.trigger_id;
+      return this.triggerId;
+    } else {
+      return null;
+    }
+  }
 }
 
-export class TriggerAPIG extends Trigger{
-    public eventData: APIGEventData;
+export class TriggerLTS extends Trigger {
+  public eventData: LTSEventData;
 
-    public constructor(input: TriggerInputProps, eventData: APIGEventData) {
-        super(input);
-        this['eventData'] = eventData;
-    }
-    
-    public getEventData():object {
-        return this.eventData;
-    }
+  public constructor(input: TriggerInputProps, eventData: LTSEventData) {
+    super(input);
+    this["eventData"] = eventData;
+  }
 
-    public async getTriggerId(client:FunctionGraphClient): Promise<string> {
-        if(this.triggerId){
-            return this.triggerId;
-        }
-        const triggers = await this.list(client);
-        const eventData = this.eventData;
-        const trigger = triggers.find(trigger => {
-            return trigger.event_data.streamName === eventData.groupId && trigger.event_data.env_id  === eventData.envId;
-        })
-        if(trigger.trigger_id){
-            this.triggerId = trigger.trigger_id;  
-            return this.triggerId;
-        }else{
-            return null;
-        }
+  public getEventData(): object {
+    return this.eventData;
+  }
+
+  public async getTriggerId(client: FunctionGraphClient): Promise<string> {
+    if (this.triggerId) {
+      return this.triggerId;
     }
+    const triggers = await this.list(client);
+    const eventData = this.eventData;
+    const trigger = triggers.find((trigger) => {
+      return (
+        trigger.event_data.group_id === eventData.groupId &&
+        trigger.event_data.topic_id === eventData.topicId
+      );
+    });
+    if (trigger.trigger_id) {
+      this.triggerId = trigger.trigger_id;
+      return this.triggerId;
+    } else {
+      return null;
+    }
+  }
 }
 
-interface TIMEREventData {
-    name: string,
-    scheduleType: string,
-    schedule: string,
-    userEvent?: string
+export class TriggerOBS extends Trigger {
+  public eventData: OBSEventData;
+
+  public constructor(input: TriggerInputProps, eventData: OBSEventData) {
+    super(input);
+    this["eventData"] = eventData;
+  }
+
+  public getEventData(): object {
+    return this.eventData;
+  }
+
+  public async getTriggerId(client: FunctionGraphClient): Promise<string> {
+    if (this.triggerId) {
+      return this.triggerId;
+    }
+    const triggers = await this.list(client);
+    const eventData = this.eventData;
+
+    const trigger = triggers.find((trigger) => {
+      return (
+        trigger.event_data.bucket === eventData.bucket &&
+        trigger.event_data.prefix === eventData.prefix &&
+        trigger.event_data.suffix === eventData.suffix
+      );
+    });
+    if (trigger.trigger_id) {
+      this.triggerId = trigger.trigger_id;
+      return this.triggerId;
+    } else {
+      return null;
+    }
+  }
 }
 
-export class TriggerTIMER extends Trigger{
-    public eventData: TIMEREventData;
+export class TriggerCTS extends Trigger {
+  public eventData: CTSEventData;
 
-    public constructor(input: TriggerInputProps, eventData: TIMEREventData) {
-        super(input);
-        this['eventData'] = eventData;
-    }
-    
-    public getEventData():object {
-        return this.eventData;
-    }
+  public constructor(input: TriggerInputProps, eventData: CTSEventData) {
+    super(input);
+    this["eventData"] = eventData;
+  }
 
-    public async getTriggerId(client: FunctionGraphClient): Promise<string> {
-        if(this.triggerId){
-            return this.triggerId;
-        }
-        const triggers = await this.list(client);
-        const eventData = this.eventData;
-        const trigger = triggers.find(trigger => {
-            return trigger.event_data.name === eventData.name;
-        })
-        if(trigger.trigger_id){
-            this.triggerId = trigger.trigger_id;  
-            return this.triggerId;
-        }else{
-            return null;
-        }
-    }
+  public getEventData(): object {
+    return this.eventData;
+  }
+
+  public async getTriggerId(client: FunctionGraphClient): Promise<any> {
+    return null;
+  }
 }
 
-interface LTSEventData {
-    groupId: string,
-    topicId: string
+export class TriggerDDS extends Trigger {
+  public eventData: DDSEventData;
+
+  public constructor(input: TriggerInputProps, eventData: DDSEventData) {
+    super(input);
+    this["eventData"] = eventData;
+  }
+
+  public getEventData(): object {
+    return this.eventData;
+  }
+
+  public async getTriggerId(client: FunctionGraphClient): Promise<any> {
+    return null;
+  }
 }
 
-export class TriggerLTS extends Trigger{
-    public eventData: LTSEventData;
+export class TriggerKAFKA extends Trigger {
+  public eventData: KAFKAEventData;
 
-    public constructor(input: TriggerInputProps, eventData: LTSEventData) {
-        super(input);
-        this['eventData'] = eventData;
-    }
-    
-    public getEventData():object {
-        return this.eventData;
-    }
+  public constructor(input: TriggerInputProps, eventData: KAFKAEventData) {
+    super(input);
+    this["eventData"] = eventData;
+  }
 
-    public async getTriggerId(client: FunctionGraphClient): Promise<string> {
-        if(this.triggerId){
-            return this.triggerId;
-        }
-        const triggers = await this.list(client);
-        const eventData = this.eventData;
-        const trigger = triggers.find(trigger => {
-            return trigger.event_data.group_id === eventData.groupId && trigger.event_data.topic_id === eventData.topicId;
-        })
-        if(trigger.trigger_id){
-            this.triggerId = trigger.trigger_id;  
-            return this.triggerId;
-        }else{
-            return null;
-        }
-    }
+  public getEventData(): object {
+    return this.eventData;
+  }
+
+  public async getTriggerId(client: FunctionGraphClient): Promise<any> {
+    return null;
+  }
 }
 
+export class TriggerClientFactory {
+  public triggerInputProps: TriggerInputProps;
+  public eventData: any;
+  public triggerTypeCode: string;
 
+  public constructor(props, functionUrn?: string) {
+    this.triggerInputProps = {
+      triggerTypeCode: props.trigger.triggerTypeCode,
+      eventTypeCode: props.trigger.eventTypeCode,
+      status: props.trigger.staus || "ACTIVE",
+      functionUrn: functionUrn,
+      triggerId: props.trigger.triggerId || null,
+    };
+    this.eventData = props.trigger.eventData;
+  }
 
-interface OBSEventData {
-    bucket: string,
-    events: Array<string>,
-    prefix?: string,
-    suffix?: string
-}
+  public setFunctionUrn(functionUrn: string) {
+    this.triggerInputProps.functionUrn = functionUrn;
+  }
 
-export class TriggerOBS extends Trigger{
-    public eventData: OBSEventData;
-
-    public constructor(input: TriggerInputProps, eventData: OBSEventData) {
-        super(input);
-        this['eventData'] = eventData;
+  public create(): Trigger {
+    if (this.triggerTypeCode === "DDS") {
+      return new TriggerDDS(this.triggerInputProps, this.eventData);
+    } else if (this.triggerTypeCode === "CTS") {
+      return new TriggerCTS(this.triggerInputProps, this.eventData);
+    } else if (this.triggerTypeCode === "APIG") {
+      return new TriggerAPIG(this.triggerInputProps, this.eventData);
+    } else if (this.triggerTypeCode === "DIS") {
+      return new TriggerDIS(this.triggerInputProps, this.eventData);
+    } else if (this.triggerTypeCode === "KAFAKA") {
+      return new TriggerKAFKA(this.triggerInputProps, this.eventData);
+    } else if (this.triggerTypeCode === "LTS") {
+      return new TriggerLTS(this.triggerInputProps, this.eventData);
+    } else if (this.triggerTypeCode === "OBS") {
+      return new TriggerOBS(this.triggerInputProps, this.eventData);
+    } else if (this.triggerTypeCode === "SMN") {
+      return new TriggerSMN(this.triggerInputProps, this.eventData);
+    } else if (this.triggerTypeCode === "TIMER") {
+      return new TriggerTIMER(this.triggerInputProps, this.eventData);
     }
-    
-    public getEventData():object {
-        return this.eventData;
-    }
-
-    public async getTriggerId(client: FunctionGraphClient): Promise<string> {
-        if(this.triggerId){
-            return this.triggerId;
-        }
-        const triggers = await this.list(client);
-        const eventData = this.eventData;
-
-        const trigger = triggers.find(trigger => {
-            return trigger.event_data.bucket === eventData.bucket && trigger.event_data.prefix === eventData.prefix && trigger.event_data.suffix === eventData.suffix;
-        })
-        if(trigger.trigger_id){
-            this.triggerId = trigger.trigger_id;  
-            return this.triggerId;
-        }else{
-            return null;
-        }
-    }
-}
-
-interface OBSEventData {
-    bucket: string,
-    events: Array<string>,
-    prefix?: string,
-    suffix?: string
-}
-
-
-export class TriggerCTS extends Trigger{
-    public eventData: CTSEventData;
-
-    public constructor(input: TriggerInputProps, eventData: CTSEventData) {
-        super(input);
-        this['eventData'] = eventData;
-    }
-    
-    public getEventData():object {
-        return this.eventData;
-    }
-
-    public async getTriggerId(client: FunctionGraphClient): Promise<any> {
-        return null;
-    }
-}
-
-export class TriggerDDS extends Trigger{
-    public eventData: DDSEventData;
-
-    public constructor(input: TriggerInputProps, eventData: DDSEventData) {
-        super(input);
-        this['eventData'] = eventData;
-    }
-    
-    public getEventData():object {
-        return this.eventData;
-    }
-
-    public async getTriggerId(client: FunctionGraphClient): Promise<any> {
-        return null;
-    } 
-}
-
-export class TriggerKAFKA extends Trigger{
-    public eventData: KAFKAEventData;
-
-    public constructor(input: TriggerInputProps, eventData: KAFKAEventData) {
-        super(input);
-        this['eventData'] = eventData;
-    }
-    
-    public getEventData():object {
-        return this.eventData;
-    }
-
-    public async getTriggerId(client: FunctionGraphClient): Promise<any> {
-        return null;
-    }
-}
-
-export function getTriggerClient(props: any, functionUrn?: string): Trigger{
-    const input: TriggerInputProps = {
-        triggerTypeCode: props.trigger.triggerTypeCode,
-        eventTypeCode: props.trigger.eventTypeCode,
-        status: props.trigger.staus || "ACTIVE",
-        functionUrn: functionUrn,
-        triggerId: props.trigger.triggerId || null
-    }
-    const triggerTypeCode = props.trigger.triggerTypeCode;
-    const eventData = props.trigger.eventData;
-    if(triggerTypeCode === "DDS"){
-        return new TriggerDDS(input, eventData);
-    }else if(triggerTypeCode === "CTS"){
-        return new TriggerCTS(input, eventData);
-    }else if(triggerTypeCode === "APIG"){
-        return new TriggerAPIG(input, eventData);
-    }else if(triggerTypeCode === "DIS"){
-        return new TriggerDIS(input, eventData);
-    }else if(triggerTypeCode === "KAFAKA"){
-        return new TriggerKAFKA(input, eventData);
-    }else if(triggerTypeCode === "LTS"){
-        return new TriggerLTS(input, eventData);
-    }else if(triggerTypeCode === "OBS"){
-        return new TriggerOBS(input, eventData);
-    }else if(triggerTypeCode === "SMN"){
-        return new TriggerSMN(input, eventData);
-    }else if(triggerTypeCode === "TIMER"){
-        return new TriggerTIMER(input, eventData);
-    }
+  }
 }

@@ -36,10 +36,7 @@ $ s deploy
 
 ## TODO
 + [x] 完成`function.ts`
-+ [ ] 完成`trigger.ts`
-+ [ ] 完成`deploy.ts`
-+ [ ] 完成`remove.ts`
-
-## 感觉
-
-感觉应该按照面向对象全重写一遍
++ [x] 完成`trigger.ts`
++ [x] 完成`deploy.ts`
++ [x] 完成`remove.ts`
++ [ ] 需要更友好的错误输出

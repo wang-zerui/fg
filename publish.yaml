@@ -68,13 +68,11 @@ Properties:
     functionUrn:
     code:
       codeUri:
-    
   trigger:
     triggerTypeCode:
     eventTypeCode:
     status:
     eventData:
-      
   functionName:
     Description: 函数名
     Required: true

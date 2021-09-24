@@ -23,7 +23,7 @@
 //         this['sk'] = sk;
 //         this['project_id'] = project_id;
 //     }
-     
+
 //     public withAk(ak: string): FunctionGraphClient {
 //         this['ak'] = ak;
 //         return this;
@@ -46,7 +46,7 @@
 //     /**
 //      * 创建函数
 //      * @summary 创建函数
-//      * @param {CreateFunctionRequestBody}  
+//      * @param {CreateFunctionRequestBody}
 //      * @throws {RequiredError}
 //      */
 //     public createFunction(createFunctionRequest: CreateFunctionRequest): Promise<CreateFunctionResponse> {
@@ -56,8 +56,8 @@
 //     }
 //     /**
 //      * 更新函数代码
-//      * @param updateFuncionRequest 
-//      * @returns 
+//      * @param updateFuncionRequest
+//      * @returns
 //      */
 //     // public updateFunction(updateFuncionRequest: UpdateFunctionRequest): Promise<UpdateFunctionResponse>{
 //     //     const options = ParamCreater().updateFunction(updateFuncionRequest);
@@ -65,16 +65,15 @@
 //     //     return this.hcClient.sendRequest(options);
 //     // }
 
-
 //     // public updateFunctionConfig(updateFunctionConfigRequest: UpdateFunctionConfigRequest): Promise<UpdateFunctionConfigResponse>{
-//     //     const options = ParamCreater().updateFunctionConfig(updateFunctionConfigRequest);    
+//     //     const options = ParamCreater().updateFunctionConfig(updateFunctionConfigRequest);
 //     //     options['responseHeader'] = ['']
 //     //     return this.hcClient.sendRequest(options);
 //     // }
 
 //     // /**
 //     //  * 删除函数
-//     //  * @param deleteFunctionRequest 
+//     //  * @param deleteFunctionRequest
 //     //  */
 //     // public deleteFunction(deleteFunctionRequest: DeleteFunctionRequest): Promise<any>{
 //     //     const options = ParamCreater().deleteFunction(deleteFunctionRequest);
@@ -84,7 +83,7 @@
 //     /**
 //      * 获取函数列表
 //      * @summary 获取函数列表
-//      * @param {GetFunctionListRequest} 
+//      * @param {GetFunctionListRequest}
 //      * @param {RequiredError}
 //      */
 //     public getFunctionList(getFunctionListRequest: GetFunctionListRequest): Promise<GetFunctionListResponse> {
@@ -95,7 +94,7 @@
 // }
 
 // export const ParamCreater = function () {
-    
+
 //     return {
 //         /**
 //          * 此接口用于创建函数
@@ -236,8 +235,8 @@
 
 //         /**
 //          * 此接口用于删除函数
-//          * @param deleteFunctionRequest 
-//          * @returns 
+//          * @param deleteFunctionRequest
+//          * @returns
 //          */
 //         deleteFunction(deleteFunctionRequest: DeleteFunctionRequest) {
 //             const options = {
@@ -264,7 +263,6 @@
 //         }
 //     }
 // }
-
 
 // function newClient(client: HcClient): FunctionGraphClient {
 //     return new FunctionGraphClient(client);

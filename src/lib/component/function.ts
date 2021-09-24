@@ -1,60 +1,72 @@
-//@ts-ignore
-import * as core from '@serverless-devs/core';
-import Client from '../client';
-import { startZip, tableShow, deleteZip } from '../utils';
-import logger from '../../common/logger';
-import { FunctionInputProps } from './functionGraph/model/CreateFunctionRequestBody'
-import { CreateFunctionRequest } from './functionGraph/model/CreateFunctionRequest';
-import { CreateFunctionRequestBody } from './functionGraph/model/CreateFunctionRequestBody';
+import * as core from "@serverless-devs/core";
+import Client from "../client";
+import { startZip, tableShow, deleteZip } from "../utils";
+import logger from "../../common/logger";
+import { FunctionInputProps } from "./functionGraph/model/CreateFunctionRequestBody";
+import { CreateFunctionRequest } from "./functionGraph/model/CreateFunctionRequest";
+import { CreateFunctionRequestBody } from "./functionGraph/model/CreateFunctionRequestBody";
 // import { FUNCTION_INFO_KEYS } from './functionGraph/model/FunctionInfo'
-import { UpdateFunctionConfigRequestBody } from './functionGraph/model/UpdateFunctionConfigRequestBody';
-import { UpdateFunctionRequestBody } from './functionGraph/model/UpdateFunctionRequestBody';
-import { UpdateFunctionRequest } from './functionGraph/model/UpdateFunctionRequest';
-import { GetFunctionListRequest } from './functionGraph/model/GetFunctionListRequest';
-import { UpdateFunctionConfigRequest } from './functionGraph/model/UpdateFunctionConfigRequest';
-import { FunctionGraphClient } from './functionGraph/FunctionGraphClient';
-import { DeleteFunctionRequest } from './functionGraph/model/DeleteFunctionRequest';
-let CONFIGS = require('../config');
+import { UpdateFunctionConfigRequestBody } from "./functionGraph/model/UpdateFunctionConfigRequestBody";
+import { UpdateFunctionRequestBody } from "./functionGraph/model/UpdateFunctionRequestBody";
+import { UpdateFunctionRequest } from "./functionGraph/model/UpdateFunctionRequest";
+import { GetFunctionListRequest } from "./functionGraph/model/GetFunctionListRequest";
+import { UpdateFunctionConfigRequest } from "./functionGraph/model/UpdateFunctionConfigRequest";
+import { FunctionGraphClient } from "./functionGraph/FunctionGraphClient";
+import { DeleteFunctionRequest } from "./functionGraph/model/DeleteFunctionRequest";
+let CONFIGS = require("../config");
 
 export default class Function {
-  public functionInfo: FunctionInputProps;
-  public functionUrn?: string;
+  private functionInfo: FunctionInputProps;
+
+  private functionUrn?: string;
+
   public constructor(functionInfo: FunctionInputProps) {
     this.functionInfo = this.handleInput(functionInfo);
   }
 
   private handleInput(functionInfo: FunctionInputProps): FunctionInputProps {
-      functionInfo.func_name = functionInfo.func_name || CONFIGS.functionName;
-      functionInfo.handler = functionInfo.handler || CONFIGS.handler;
-      functionInfo.memory_size =  functionInfo.memory_size || CONFIGS.memorySize;
-      functionInfo.timeout = functionInfo.timeout || CONFIGS.timeout;
-      functionInfo.runtime = functionInfo.runtime || CONFIGS.handler(functionInfo.runtime);
-      functionInfo.pkg = functionInfo.pkg || CONFIGS.pkg;
-      functionInfo.code_type = functionInfo.code_type || CONFIGS.codeType;
-      return functionInfo;
+    functionInfo.func_name = functionInfo.func_name || CONFIGS.functionName;
+    functionInfo.handler = functionInfo.handler || CONFIGS.handler;
+    functionInfo.memory_size = functionInfo.memory_size || CONFIGS.memorySize;
+    functionInfo.timeout = functionInfo.timeout || CONFIGS.timeout;
+    functionInfo.runtime =
+      functionInfo.runtime || CONFIGS.handler(functionInfo.runtime);
+    functionInfo.pkg = functionInfo.pkg || CONFIGS.pkg;
+    functionInfo.code_type = functionInfo.code_type || CONFIGS.codeType;
+    return functionInfo;
   }
+
   /**
-   * 创建函数
-   * @param props
-   * @returns res
-   * @returns functionBrn
+   *  创建云函数
+   * @param client {FunctionGraphClient}
+   * @param codeUri {string} 函数代码路径
+   * @returns res {Object} 函数信息
+   * @returns functionBrn {string} 函数Urn
    */
-  public async create(client:FunctionGraphClient, codeUri?: string) {
-    const vm1 = core.spinner('File compressing...');
-    const ZipFile = await startZip(codeUri || './')
-    await deleteZip('hello.zip');
-    vm1.succeed('File compression completed');
+  public async create(client: FunctionGraphClient, codeUri?: string) {
+    logger.debug("调用CreateFunction");
 
-    const body = new CreateFunctionRequestBody(this.functionInfo)
-      .withFunctionCode(ZipFile)
-    const vm = core.spinner(`Function ${this.functionInfo.func_name} creating.`);
+    const vm1 = core.spinner("File compressing...");
+    const ZipFile = await startZip(codeUri || "./");
+    await deleteZip("hello.zip");
+    vm1.succeed("File compression completed");
 
-    const response = await Client.fgClient.createFunction(new CreateFunctionRequest()
-      .withBody(body));
-    
-    if( response.status === 200 ){
+    const body = new CreateFunctionRequestBody(
+      this.functionInfo
+    ).withFunctionCode(ZipFile);
+    logger.debug(JSON.stringify(body));
+
+    const vm = core.spinner(
+      `Function ${this.functionInfo.func_name} creating.`
+    );
+    const response = await Client.fgClient.createFunction(
+      new CreateFunctionRequest().withBody(body)
+    );
+
+    if (response.status === 200) {
       vm.succeed(`Function ${this.functionInfo.func_name} created.`);
-    }else{
+      logger.debug(`返回结果，${JSON.stringify(response.data)}`);
+    } else {
       vm.fail(`Function ${this.functionInfo.func_name} creating failed.`);
       // TODO:使用更友好的错误返回
       // 错误码说明 https://support.huaweicloud.com/api-functiongraph/ErrorCode.html
@@ -65,61 +77,73 @@ export default class Function {
   }
 
   /**
-   * 更新代码
-   * @param props
-   * @returns res
-   * @returns functionBrn
+   *  更新代码
+   * @param client {FunctionGraphClient}
+   * @param codeUri {string} 代码路径
+   * @returns res {object} 函数信息
+   * @returns functionUrn {string} functionBrn
    */
   public async updateCode(client: FunctionGraphClient, codeUri?: string) {
-    const vm1 = core.spinner('File compressing...');
-    const ZipFile = await startZip(codeUri || './');
-    await deleteZip('hello.zip');
-    vm1.succeed('File compression completed');
+    const vm1 = core.spinner("File compressing...");
+    const ZipFile = await startZip(codeUri || "./");
+    await deleteZip("hello.zip");
+    vm1.succeed("File compression completed");
 
     const body = new UpdateFunctionRequestBody()
       .withCodeType(this.functionInfo.code_type)
-      .withFunctionCode(ZipFile)
+      .withFunctionCode(ZipFile);
 
-    const vm2 = core.spinner('Function code updating...');
+    const vm2 = core.spinner("Function code updating...");
     const updateFunctionReqeust = new UpdateFunctionRequest()
       .withFunctionUrn(await this.getFunctionUrn(client))
-      .withBody(body)
-    const response = await Client.fgClient
-      .updateFunction(updateFunctionReqeust)
+      .withBody(body);
+    const response = await Client.fgClient.updateFunction(
+      updateFunctionReqeust
+    );
 
-    if( response.status !== 200 ){
+    if (response.status !== 200) {
       vm2.fail(`Function ${this.functionInfo.func_name} updating failed.`);
       // TODO:使用更友好的错误返回
       // 错误码说明 https://support.huaweicloud.com/api-functiongraph/ErrorCode.html
+      logger.debug(JSON.stringify(response.data));
+      logger.debug("TODO: More friendly error response needed!");
       throw new Error(JSON.stringify(response.data));
-    }else{
+    } else {
       vm2.succeed(`Function ${this.functionInfo.func_name} updated.`);
+      logger.debug(JSON.stringify(response.data));
     }
     return this.handleResponse(response.data);
   }
 
   /**
-   * 更新配置
-   * @param props
-   * @returns res
-   * @returns functionBrn
+   *  更新函数配置
+   * @param client {FunctionGraphClinet}
+   * @returns res {Object} 函数信息，包括函数基本信息和函数Urn
    */
-  public async updateConfig(client:FunctionGraphClient) {
-    const vm = core.spinner('Function configuration updating...');
-    let body = new UpdateFunctionConfigRequestBody(this.functionInfo)
+  public async updateConfig(client: FunctionGraphClient) {
+    logger.debug("调用updateFunctionConfig");
 
-    const response = await Client.fgClient
-      .updateFunctionConfig(new UpdateFunctionConfigRequest()
+    const vm = core.spinner("Function configuration updating...");
+    let body = new UpdateFunctionConfigRequestBody(this.functionInfo);
+
+    const response = await Client.fgClient.updateFunctionConfig(
+      new UpdateFunctionConfigRequest()
         .withFunctionUrn(await this.getFunctionUrn(client))
-        .withBody(body));
-    
-    if( response.status !== 200 ){
-      vm.fail(`Function ${this.functionInfo.func_name} configuration updating failed.`);
+        .withBody(body)
+    );
+
+    if (response.status !== 200) {
+      vm.fail(
+        `Function ${this.getFunctionName()} configuration updating failed.`
+      );
       // TODO:使用更友好的错误返回
       // 错误码说明 https://support.huaweicloud.com/api-functiongraph/ErrorCode.html
+      logger.debug(JSON.stringify(response.data));
+      logger.debug("TODO: More friendly error response needed!");
       throw new Error(JSON.stringify(response.data));
-    }else{
-      vm.succeed(`Function ${this.functionInfo.func_name} configuration updated.`);
+    } else {
+      vm.succeed(`Function ${this.getFunctionName()} configuration updated.`);
+      logger.debug(JSON.stringify(response.data));
     }
 
     // 处理返回
@@ -128,33 +152,55 @@ export default class Function {
     return this.handleResponse(response.data);
   }
 
-  public async list( client:FunctionGraphClient, table?: boolean): Promise<Array<any>> {
-    const data = await client
-      .getFunctionList(new GetFunctionListRequest()
-        .withPackage(this.functionInfo.pkg))
-    if(data.status !== 200){
+  /**
+   *  获取函数列表
+   * @param client {FunctionGraphClient}
+   * @param table {boolean} 是否显示函数表
+   * @retrun functions {Ayyay<any>} 函数列表信息,每一项对应一个函数,包含函数信息
+   */
+  public async list(
+    client: FunctionGraphClient,
+    table?: boolean
+  ): Promise<Array<any>> {
+    const data = await client.getFunctionList(
+      new GetFunctionListRequest().withPackage(this.functionInfo.pkg)
+    );
+    if (data.status !== 200) {
       logger.debug("获取函数列表错误");
-      throw new Error("Getting function list error")
+      throw new Error("Getting function list error");
     }
     if (table) {
-      tableShow(data.data.functions, ['FunctionName', 'Description', 'UpdatedAt', 'LastModified', 'Region']);
+      tableShow(data.data.functions, [
+        "FunctionName",
+        "Description",
+        "UpdatedAt",
+        "LastModified",
+        "Region",
+      ]);
       return data.data.functions;
     } else {
       return data.data.functions;
     }
   }
-
-  public async remove(client:FunctionGraphClient) {
+  /**
+   *  删除函数(及其触发器)
+   * @param client {FunctionGraphClinet}
+   * @return 调用结果
+   */
+  public async remove(client: FunctionGraphClient) {
     const func_urn = await this.getFunctionUrn(client);
-    const vm = core.spinner(`Function ${this.functionInfo.func_name} deleting...`);
-    
-    const response = await client
-      .deleteFunction(new DeleteFunctionRequest(func_urn))
-    
-    if ( response.status !== 200 ) {
+    const vm = core.spinner(
+      `Function ${this.functionInfo.func_name} deleting...`
+    );
+
+    const response = await client.deleteFunction(
+      new DeleteFunctionRequest(func_urn)
+    );
+
+    if (response.status !== 200) {
       logger.debug(JSON.stringify(response));
-      vm.fail(`Function ${this.functionInfo.func_name} delete failed.`)
-      throw new Error(JSON.stringify(response.data))
+      vm.fail(`Function ${this.functionInfo.func_name} delete failed.`);
+      throw new Error(JSON.stringify(response.data));
     } else {
       logger.debug(JSON.stringify(response));
       vm.succeed(`Function ${func_urn} deleted.`);
@@ -162,18 +208,18 @@ export default class Function {
     return response;
   }
 
-
   /**
    * 一些衍生方法
    */
 
   /**
-   * Check function existance
+   *  检查函数是否已经存在
+   * @params client {FunctionGraphClient}
+   * @return isCreated {Boolean}: true表示函数存在；false表示不存在
    */
-  public async check(client:FunctionGraphClient) {
+  public async check(client: FunctionGraphClient) {
     logger.debug("Checking function exists.");
     const functionName = this.functionInfo.func_name;
-    const vm = core.spinner('Checking if ' + functionName + ' exits...');
     const functions = await this.list(client);
     let isCreated = false;
     for (let i = 0; i < functions.length; i++) {
@@ -182,47 +228,63 @@ export default class Function {
         break;
       }
     }
-    if (isCreated) {
-      vm.succeed(`Function ${functionName} is already online.`);
-    } else {
-      vm.succeed(`Function ${functionName} does not exitst.`);
-    }
     return isCreated;
   }
 
   /**
-   * 使用函数名获得func_urn
-   * @param functionName 
-   * @param pkg 
-   * @returns 
+   *  通过函数名获得func_urn，同时设置实例的functionUrn属性
+   * @param client {FunctionGraphClient}
+   * @returns functionUrn {stirng} 函数Urn
    */
-  public async getUrnByFunctionName(client:FunctionGraphClient):Promise<string> {
-    logger.debug('Get functionBrn by function name:' + this.functionInfo.func_name);
-    const functions  = await this.list(client);
-    for(let func of functions){
-      if ( func.func_name === this.functionInfo.func_name ) {
-        this.functionUrn = func.func_urn;
-        return func.func_urn;
-      }
+  public async getUrnByFunctionName(
+    client: FunctionGraphClient
+  ): Promise<string> {
+    logger.debug(
+      "Get functionUrn by function name:" + this.functionInfo.func_name
+    );
+    const functions = await this.list(client);
+    const targetFunctionName = this.getFunctionName();
+    const targetFunction = functions.find((func) => {
+      func.func_name === targetFunctionName;
+    });
+    if (targetFunction) {
+      this.functionUrn = targetFunction.func;
+      logger.debug(`functionUrn: ${this.functionUrn}`);
+      return targetFunction.func_urn;
+    } else {
+      return null;
     }
-    throw new Error("Function not found.");
-  }
-
-  public async getFunctionUrn(client: FunctionGraphClient): Promise<string> {
-    return this.functionUrn || ( await this.getUrnByFunctionName(client) )
   }
 
   /**
-   * 处理函数信息输出
-   * @param response 
-   * @returns 
+   *  获得函数实例的func_urn
+   * @param client {FunctionGraphClient}
+   * @returns functionUrn {string} 函数Urn
+   */
+  public async getFunctionUrn(client: FunctionGraphClient): Promise<string> {
+    return this.functionUrn || (await this.getUrnByFunctionName(client));
+  }
+
+  /**
+   *  处理函数信息输出
+   * @param response
+   * @returns
    */
   public async handleResponse(response: any) {
     logger.debug(`${response}`);
     let content = [];
-    let noNeedKeys = ['digest', 'last_modified', 'func_code', 'strategy_config', 'type', 'log_stream_id', 'log_group_id ', 'long_time'];
+    let noNeedKeys = [
+      "digest",
+      "last_modified",
+      "func_code",
+      "strategy_config",
+      "type",
+      "log_stream_id",
+      "log_group_id ",
+      "long_time",
+    ];
     for (let i of Object.keys(response)) {
-      if(noNeedKeys.indexOf(i) < 0 && response[i]){
+      if (noNeedKeys.indexOf(i) < 0 && response[i]) {
         content.push({
           desc: i,
           example: `${response[i]}`,
@@ -230,19 +292,27 @@ export default class Function {
       }
     }
     content.push({
-      desc: 'More',
-      example: CONFIGS.dashBoardUrl
+      desc: "More",
+      example: CONFIGS.dashBoardUrl,
     });
-    
+
     logger.debug(`Calling Function response${JSON.stringify(content)}`);
     return {
       res: [
         {
-          header: 'Function',
+          header: "Function",
           content,
         },
       ],
       functionUrn: response.func_urn,
     };
+  }
+
+  /**
+   *  获取函数名
+   * @returns functionName {string} 函数名
+   */
+  public getFunctionName(): string {
+    return this.functionInfo.func_name;
   }
 }

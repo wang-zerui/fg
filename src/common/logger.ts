@@ -1,12 +1,25 @@
-const { HLogger } = require('@serverless-devs/core');
+const { HLogger } = require("@serverless-devs/core");
 
 export default class ComponentLogger {
-  @HLogger('S-CORE') static logger;
-  static CONTENT = 'CFC';
+  @HLogger("S-CORE") static logger;
+  static CONTENT = "CFC";
   static setContent(content) {
     ComponentLogger.CONTENT = content;
   }
-  static log(m, color?: 'black' | 'red' | 'green' | 'yellow' | 'blue' | 'magenta' | 'cyan' | 'white' | 'whiteBright' | 'gray') {
+  static log(
+    m,
+    color?:
+      | "black"
+      | "red"
+      | "green"
+      | "yellow"
+      | "blue"
+      | "magenta"
+      | "cyan"
+      | "white"
+      | "whiteBright"
+      | "gray"
+  ) {
     this.logger.log(m, color);
   }
   static info(m) {
@@ -26,6 +39,6 @@ export default class ComponentLogger {
   }
 
   static success(m) {
-    this.logger.log(m, 'green');
+    this.logger.log(m, "green");
   }
 }
