@@ -11,9 +11,8 @@ import { mark } from "../interface/profile";
 import { FunctionInputProps } from "./functionGraph/model/CreateFunctionRequestBody";
 import Client from "../client";
 import { FunctionGraphClient } from "./functionGraph/FunctionGraphClient";
-import { getTriggerClient, Trigger } from "./trigger";
 import Function from "./function";
-const { getState } = require("@serverless-devs/core");
+import { Trigger, TriggerClientFactory } from "./trigger";
 
 const COMMAND: string[] = ["all", "function", "trigger", "help"];
 
@@ -131,7 +130,7 @@ export default class Remove {
     this.client = Client.fgClient;
   }
 
-  async remove(props, subCommand) {
+  async remove(props, subCommand: string) {
     if (props.function) {
       // 删除函数只需要一个functionUrn
       const functionInputs: FunctionInputProps = {
@@ -146,21 +145,13 @@ export default class Remove {
       this.functionClient = new Function(functionInputs);
     }
     if (props.trigger) {
-      this.triggerClient = getTriggerClient(props);
+      let triggerClientFactory = new TriggerClientFactory(props);
+      this.triggerClient = triggerClientFactory.create();
     }
     if (subCommand === "all" || subCommand === "function") {
       await this.functionClient.remove(this.client);
     }
     if (subCommand === "trigger") {
-      if (props.function.functionName) {
-        //const functionUrn =
-        //  props.trigger.functionUrn ||
-        //  (await this.functionClient.getFunctionUrn(this.client));
-
-        // 默认删除本地trigger
-        this.triggerClient.functionUrn = functionUrn;
-      }
-      // triggerId默认删除
       return await this.triggerClient.remove(this.client);
     }
     if (subCommand === "help") {

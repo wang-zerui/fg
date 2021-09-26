@@ -6,7 +6,9 @@ import { UpdateTriggerRequest } from "./functionGraph/model/UpdateTriggerRequest
 import { UpdateTriggerRequestBody } from "./functionGraph/model/UpdateTriggerRequestBody";
 import logger from "../../common/logger";
 import { DeleteTriggerRequest } from "./functionGraph/model/DeleteTriggerRequest";
+import * as core from '@serverless-devs/core'
 const { setState, getState } = require("@serverless-devs/core");
+
 
 export const TRIGGER_TYPE_CODES = [
   "SMN",
@@ -35,6 +37,99 @@ export interface LocalTriggerInfo {
   triggerTypeCode: string;
   functionUrn: string;
 }
+
+interface SMNEventData {
+  topicUrn: string; //SMN服务的topic_urn，创建时必填。唯一
+  subscriptionStatus: string; //topic_urn的订阅状态：Unconfirmed / Confirmed。
+}
+
+interface CTSEventData {
+  name: string;
+  operations: string;
+}
+
+interface DDSEventData {
+  instanceId: string;
+  collectionName: string;
+  dbName: string;
+  dbPassword: string;
+  batchSize: Array<string>;
+}
+
+interface KAFKAEventData {
+  instance_id: string;
+  db_name: string;
+  collection_name: string;
+  db_user: string;
+  db_password: string;
+  batch_size: number;
+}
+
+interface DISEventData {
+  streamName: string;
+  sharditeratorType: string;
+  batchSize?: number;
+  pollingInterval?: number;
+}
+
+interface APIGEventData {
+  groupId: string;
+  envId: string;
+  auth: string;
+  protocol: string;
+  name: string;
+  path: string;
+  matchMode: string;
+  reqMethod: string;
+  backendType: string;
+  type: number;
+  slDomain: string;
+  instanceId: string;
+}
+
+interface LTSEventData {
+  groupId: string;
+  topicId: string;
+}
+
+interface TIMEREventData {
+  name: string;
+  scheduleType: string;
+  schedule: string;
+  userEvent?: string;
+}
+
+interface OBSEventData {
+  bucket: string;
+  events: Array<string>;
+  prefix?: string;
+  suffix?: string;
+}
+
+interface OBSEventData {
+  bucket: string;
+  events: Array<string>;
+  prefix?: string;
+  suffix?: string;
+}
+
+// interface DMSEventData {
+//     queueId: string,
+//     consumerGroupId: string
+// }
+
+// export class TriggerDMS extends Trigger{
+//     public eventData: DMSEventData;
+
+//     public constructor(input: TriggerInputProps, eventData: DMSEventData) {
+//         super(input);
+//         this['eventData'] = eventData;
+//     }
+
+//     public getEventData():object {
+//         return this.eventData;
+//     }
+// }
 
 export abstract class Trigger {
   public triggerId?: string;
@@ -75,21 +170,26 @@ export abstract class Trigger {
       .withEventData(this.getEventData());
    
     logger.debug(Object.assign({}, body));
+    const vm = core.spinner("Creating trigger...");
     const response = await client.createTrigger(
       new CreateTriggerRequest()
         .withFunctionUrn(this.functionUrn)
         .withBody(body)
     );
-
+    
     if (response.status !== 200) {
       //TODO:需要更友好的错误输出
-      
-      //throw new Error(JSON.stringify(response.data));
+      // 不能throw error
+      logger.debug(JSON.stringify(response.data));
+      vm.fail(`Creating trigger failed.`);
+      // TODO：应该查看是否是Trigger重复，如果是则应该
     } else {
+      vm.succeed(`Creating trigger successfully.`);
       const triggerId = response.data.trigger_id;
       const triggerTypeCode = this.triggerTypeCode;
       const functionUrn = this.functionUrn;
-      setLocalTriggerInfo({triggerId, triggerTypeCode, functionUrn});
+      logger.debug(`triggerId:${triggerId}`);
+      this.setLocalTriggerInfo({triggerId, triggerTypeCode, functionUrn});
       return this.handleResponse(response.data);
     }
   }
@@ -111,26 +211,31 @@ export abstract class Trigger {
   }
 
   /**
-   * 更新触发器
+   * 更新触发器，只能更新status
    * @param Client
    * @param functionUrn
    * @returns
    */
-  private async update(client: FunctionGraphClient): Promise<any> {
+  public async update(client: FunctionGraphClient): Promise<any> {
     const body = new UpdateTriggerRequestBody().withTriggerStatus(this.status);
 
+    logger.warning("Updating trigger, only support updating status.")
+    const vm = core.spinner("Updating trigger...");
     const response = await client.updateTrigger(
       new UpdateTriggerRequest()
-        .withTriggerId(await this.getTriggerId(client))
+        .withTriggerId((await this.getLocalTriggerInfo()).triggerId)
         .withFunctionUrn(this.functionUrn)
         .withTriggerTypeCode(this.triggerTypeCode)
         .withBody(body)
     );
     if (response.status !== 200) {
       //TODO:需要更友好的错误输出
-      throw new Error(JSON.stringify(response.data));
+      // throw new Error(JSON.stringify(response.data));
+      vm.fail("Failed to update trigger.");
+      return 
     } else {
-      return response.data;
+      vm.succeed("Update trigger successfully.");
+      return this.handleResponse(response.data);
     }
   }
 
@@ -143,11 +248,10 @@ export abstract class Trigger {
     let triggerTypeCode: string;
     let functionUrn = this.functionUrn;
     if (!this.triggerId) {
-      const {
-        triggerId,
-        triggerTypeCode,
-        functionUrn
-      } = this.getLocalTriggerInfo();
+      const localTriggerInfo = await this.getLocalTriggerInfo();
+      triggerId = localTriggerInfo.triggerId;
+      triggerTypeCode = localTriggerInfo.triggerTypeCode;
+      functionUrn = localTriggerInfo.functionUrn;
       // 如果没有本地记录直接返回
       if(!triggerId) {
         logger.error("Delete nothing. No trigger created before.")
@@ -166,7 +270,7 @@ export abstract class Trigger {
     const response = await client.deleteTrigger(deleteTriggerRequest);
     if (response.status !== 200) {
       // TODO:需要更有好的错误输出
-      throw new Error(JSON.stringify(response.data));
+      logger.error("Deleting trigger failed, error message: " + JSON.stringify(response.data));
     } else {
       return response.data;
     }
@@ -245,80 +349,6 @@ export abstract class Trigger {
   }
 }
 
-interface SMNEventData {
-  topicUrn: string; //SMN服务的topic_urn，创建时必填。唯一
-  subscriptionStatus: string; //topic_urn的订阅状态：Unconfirmed / Confirmed。
-}
-
-interface CTSEventData {
-  name: string;
-  operations: string;
-}
-
-interface DDSEventData {
-  instanceId: string;
-  collectionName: string;
-  dbName: string;
-  dbPassword: string;
-  batchSize: Array<string>;
-}
-
-interface KAFKAEventData {
-  instance_id: string;
-  db_name: string;
-  collection_name: string;
-  db_user: string;
-  db_password: string;
-  batch_size: number;
-}
-
-interface DISEventData {
-  streamName: string;
-  sharditeratorType: string;
-  batchSize?: number;
-  pollingInterval?: number;
-}
-
-interface APIGEventData {
-  groupId: string;
-  envId: string;
-  auth: string;
-  protocol: string;
-  name: string;
-  path: string;
-  matchMode: string;
-  reqMethod: string;
-  backendType: string;
-  type: number;
-  slDomain: string;
-  instanceId: string;
-}
-
-interface LTSEventData {
-  groupId: string;
-  topicId: string;
-}
-
-interface TIMEREventData {
-  name: string;
-  scheduleType: string;
-  schedule: string;
-  userEvent?: string;
-}
-
-interface OBSEventData {
-  bucket: string;
-  events: Array<string>;
-  prefix?: string;
-  suffix?: string;
-}
-interface OBSEventData {
-  bucket: string;
-  events: Array<string>;
-  prefix?: string;
-  suffix?: string;
-}
-
 export class TriggerSMN extends Trigger {
   public eventData: SMNEventData;
 
@@ -344,24 +374,6 @@ export class TriggerSMN extends Trigger {
     }
   }
 }
-
-// interface DMSEventData {
-//     queueId: string,
-//     consumerGroupId: string
-// }
-
-// export class TriggerDMS extends Trigger{
-//     public eventData: DMSEventData;
-
-//     public constructor(input: TriggerInputProps, eventData: DMSEventData) {
-//         super(input);
-//         this['eventData'] = eventData;
-//     }
-
-//     public getEventData():object {
-//         return this.eventData;
-//     }
-// }
 
 export class TriggerDIS extends Trigger {
   public eventData: DISEventData;
