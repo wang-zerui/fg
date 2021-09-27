@@ -8,7 +8,7 @@ services:
       projectId: 0bcc05efb100f2a92f53c011f262dfa0
       region: cn-north-4
       function:
-        functionName: wzr-fg-test
+        functionName: wzr-fg-test-2021-9-27-1
         handler: index.handler
         memorySize: 128
         timeout: 30
@@ -20,7 +20,7 @@ services:
       trigger:
         triggerTypeCode: TIMER
         eventTypeCode: MessageCreated
-        status: ACTIVE
+        status: DISABLED
         eventData:
           name: Timeer-fbb8
           schedule: 3m

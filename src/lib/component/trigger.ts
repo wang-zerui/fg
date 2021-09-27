@@ -169,27 +169,33 @@ export abstract class Trigger {
       .withEventTypeCode(this.eventTypeCode)
       .withEventData(this.getEventData());
    
-    logger.debug(Object.assign({}, body));
-    const vm = core.spinner("Creating trigger...");
+    logger.debug(JSON.stringify(Object.assign({}, body)));
+    const vm = core.spinner("Checking if trigger exists...");
     const response = await client.createTrigger(
       new CreateTriggerRequest()
         .withFunctionUrn(this.functionUrn)
         .withBody(body)
     );
-    
+    logger.debug(JSON.stringify(response.data));
     if (response.status !== 200) {
-      //TODO:需要更友好的错误输出
-      // 不能throw error
-      logger.debug(JSON.stringify(response.data));
-      vm.fail(`Creating trigger failed.`);
-      // TODO：应该查看是否是Trigger重复，如果是则应该
+      if(response.data.error_code === "FSS.1148"){ // 该错误码时，触发器重复，尝试更新触发器。
+        vm.succeed("Trigger is already online.")
+        return await this.update(client);
+      }else{
+        vm.succeed(`New trigger.`);
+        const vm1 = core.spinner("Creating trigger...");
+        vm1.fail("Creating trigger failed.");
+        logger.error(response.data.error_msg);
+      }
     } else {
-      vm.succeed(`Creating trigger successfully.`);
+      vm.succeed(`New trigger.`);
+      const vm1 = core.spinner("Creating trigger...");
       const triggerId = response.data.trigger_id;
       const triggerTypeCode = this.triggerTypeCode;
       const functionUrn = this.functionUrn;
       logger.debug(`triggerId:${triggerId}`);
-      this.setLocalTriggerInfo({triggerId, triggerTypeCode, functionUrn});
+      await this.setLocalTriggerInfo({triggerId, triggerTypeCode, functionUrn});
+      vm1.succeed("Creating trigger successfully.");
       return this.handleResponse(response.data);
     }
   }
@@ -219,11 +225,16 @@ export abstract class Trigger {
   public async update(client: FunctionGraphClient): Promise<any> {
     const body = new UpdateTriggerRequestBody().withTriggerStatus(this.status);
 
-    logger.warning("Updating trigger, only support updating status.")
+    logger.warning("Updating trigger, only support updating status.");
+    const triggerId = await this.getTriggerId(client) || (await this.getLocalTriggerInfo()).triggerId;
+    if(!triggerId){
+      logger.debug("没找到是哪个trigger");
+      return;
+    }
     const vm = core.spinner("Updating trigger...");
     const response = await client.updateTrigger(
       new UpdateTriggerRequest()
-        .withTriggerId((await this.getLocalTriggerInfo()).triggerId)
+        .withTriggerId(triggerId)
         .withFunctionUrn(this.functionUrn)
         .withTriggerTypeCode(this.triggerTypeCode)
         .withBody(body)
@@ -231,8 +242,10 @@ export abstract class Trigger {
     if (response.status !== 200) {
       //TODO:需要更友好的错误输出
       // throw new Error(JSON.stringify(response.data));
+      logger.debug(JSON.stringify(response.data));
       vm.fail("Failed to update trigger.");
-      return 
+      logger.error(response.data.error_msg);
+      return;
     } else {
       vm.succeed("Update trigger successfully.");
       return this.handleResponse(response.data);
@@ -260,7 +273,7 @@ export abstract class Trigger {
       logger.info("Deleteing trigger created before.");
     } else {
       triggerId = this.triggerId;
-      triggerTypeCode = this.triggerTypeCode;
+      triggerTypeCode = triggerTypeCode;
       logger.info("Deleteing trigger indicated in s.yaml");
     }
     const deleteTriggerRequest = new DeleteTriggerRequest()
@@ -590,13 +603,12 @@ export class TriggerKAFKA extends Trigger {
 export class TriggerClientFactory {
   public triggerInputProps: TriggerInputProps;
   public eventData: any;
-  public triggerTypeCode: string;
 
   public constructor(props, functionUrn?: string) {
     this.triggerInputProps = {
       triggerTypeCode: props.trigger.triggerTypeCode,
       eventTypeCode: props.trigger.eventTypeCode,
-      status: props.trigger.staus || "ACTIVE",
+      status: props.trigger.status || "ACTIVE",
       functionUrn: functionUrn,
       triggerId: props.trigger.triggerId || null,
     };
@@ -608,24 +620,28 @@ export class TriggerClientFactory {
   }
 
   public create(): Trigger {
-    if (this.triggerTypeCode === "DDS") {
-      return new TriggerDDS(this.triggerInputProps, this.eventData);
-    } else if (this.triggerTypeCode === "CTS") {
-      return new TriggerCTS(this.triggerInputProps, this.eventData);
-    } else if (this.triggerTypeCode === "APIG") {
-      return new TriggerAPIG(this.triggerInputProps, this.eventData);
-    } else if (this.triggerTypeCode === "DIS") {
-      return new TriggerDIS(this.triggerInputProps, this.eventData);
-    } else if (this.triggerTypeCode === "KAFAKA") {
-      return new TriggerKAFKA(this.triggerInputProps, this.eventData);
-    } else if (this.triggerTypeCode === "LTS") {
-      return new TriggerLTS(this.triggerInputProps, this.eventData);
-    } else if (this.triggerTypeCode === "OBS") {
-      return new TriggerOBS(this.triggerInputProps, this.eventData);
-    } else if (this.triggerTypeCode === "SMN") {
-      return new TriggerSMN(this.triggerInputProps, this.eventData);
-    } else if (this.triggerTypeCode === "TIMER") {
-      return new TriggerTIMER(this.triggerInputProps, this.eventData);
+    const triggerTypeCode = this.triggerInputProps.triggerTypeCode;
+    const eventData = this.eventData;
+    if (triggerTypeCode === "DDS") {
+      return new TriggerDDS(this.triggerInputProps, eventData);
+    } else if (triggerTypeCode === "CTS") {
+      return new TriggerCTS(this.triggerInputProps, eventData);
+    } else if (triggerTypeCode === "APIG") {
+      return new TriggerAPIG(this.triggerInputProps, eventData);
+    } else if (triggerTypeCode === "DIS") {
+      return new TriggerDIS(this.triggerInputProps, eventData);
+    } else if (triggerTypeCode === "KAFAKA") {
+      return new TriggerKAFKA(this.triggerInputProps, eventData);
+    } else if (triggerTypeCode === "LTS") {
+      return new TriggerLTS(this.triggerInputProps, eventData);
+    } else if (triggerTypeCode === "OBS") {
+      return new TriggerOBS(this.triggerInputProps, eventData);
+    } else if (triggerTypeCode === "SMN") {
+      return new TriggerSMN(this.triggerInputProps, eventData);
+    } else if (triggerTypeCode === "TIMER") {
+      return new TriggerTIMER(this.triggerInputProps, eventData);
+    } else {
+      logger.error("Unsupported trigger type.");
     }
   }
 }

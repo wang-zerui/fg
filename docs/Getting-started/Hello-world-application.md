@@ -1,10 +1,10 @@
 # 部署一个Hello World函数
 
-在完成[工具安装](https://github.com/devsapp/fc/blob/main/docs/Getting-started/Install-tutorial.md)以及[密钥配置](https://github.com/devsapp/fc/blob/main/docs/Getting-started/Setting-up-credentials.md)后，我们可以尝试来部署一个简单的 Serverless 应用。
+在完成[工具安装](./installconfig.md.md)以及[密钥配置](./config.md)后，我们可以尝试来部署一个简单的 Serverless 应用。
 
 ```shell
 # 步骤一 初始化，并进入到项目中
-$ s init xinwuyun/start-cfc
+$ s init xinwuyun/start-fg
 # 步骤二 进入项目部署应用
 $ cd node-http
 $ s deploy
@@ -15,35 +15,32 @@ $ s deploy
 ```
 Function
 
-  Description   测试函数                                                                    
-  Region        bj                                                                      
-  Timeout       3                                                                       
-  Handler       index.handler                                                           
-  Version       $LATEST                                                                 
-  CodeSize      1485                                                                    
-  FunctionBrn   xxxxxxxxxxxxxxxxxxxxx
-  MemorySize    128                                                                     
-  More          https://console.bce.baidu.com/cfc/#/cfc/function/info~name=TestTriggers 
+  func_urn        urn:fss:cn-north-4:0bcc05efb100f2a92f53c011f262dfa0:function:default:wzr-fg-test-2021-9-27-1:latest 
+  func_name       wzr-fg-test-2021-9-27-1                                                                             
+  domain_id       0bbeba4f1080f3560fe8c011e1ec4960                                                                    
+  namespace       0bcc05efb100f2a92f53c011f262dfa0                                                                    
+  project_name    cn-north-4                                                                                          
+  package         default                                                                                             
+  runtime         Node.js8.10                                                                                         
+  timeout         30                                                                                                  
+  handler         index.handler                                                                                       
+  memory_size     128                                                                                                 
+  cpu             300                                                                                                 
+  code_type       zip                                                                                                 
+  code_filename   wzr-fg-test-2021-9-27-1.zip                                                                         
+  code_size       1227                                                                                                
+  version         latest                                                                                              
+  More            https://console.huaweicloud.com/functiongraph/#/serverless/dashboard                                
 
 Trigger
 
-  RelationId   xxxxxxxxxxxxxxxxxxxxxxx
-  Source       cfc-http-trigger/v1/CFCAPI                                                                                 
-  Url          https://5zr6ptrzv4a33.cfc-execute.bj.baidubce.com/test                                                     
-  More         https://console.bce.baidu.com/cfc/#/cfc/function/trigger~name=test                                         
+  TriggerId         494f61ab-2db7-4b53-a28b-8b9aa9083fd3 
+  TriggerTypeCode   TIMER                                
+  TriggerStatus     DISABLED                             
 
-Trigger data
+Trigger event data
 
-  AuthType       anonymous 
-  IsBinary       false     
-  Method         GET       
-  ResourcePath   /test 
+  name            Timeer-fbb8 
+  schedule        3m          
+  schedule_type   Rat
 ```
-
-访问输出信息中的trigger->url：https://5zr6ptrzv4a33.cfc-execute.bj.baidubce.com/test 
-
-可以看到输出信息：
-
-![image-20210815141221246](https://gitee.com/xinwuyun/myimage/raw/master/img/image-20210815141221246.png)
-
-## 

@@ -1,6 +1,6 @@
 {
 	"id": 0,
-	"name": "s-component-show1",
+	"name": "fg",
 	"kind": 0,
 	"kindString": "Project",
 	"flags": {},
@@ -56,7 +56,7 @@
 					}
 				},
 				{
-					"id": 14,
+					"id": 17,
 					"name": "client",
 					"kind": 1024,
 					"kindString": "Property",
@@ -80,7 +80,7 @@
 					}
 				},
 				{
-					"id": 15,
+					"id": 18,
 					"name": "inputs",
 					"kind": 1024,
 					"kindString": "Property",
@@ -97,7 +97,7 @@
 					}
 				},
 				{
-					"id": 13,
+					"id": 16,
 					"name": "private",
 					"kind": 1024,
 					"kindString": "Property",
@@ -108,7 +108,7 @@
 					"sources": [
 						{
 							"fileName": "index.ts",
-							"line": 122,
+							"line": 107,
 							"character": 9
 						}
 					],
@@ -118,7 +118,7 @@
 					}
 				},
 				{
-					"id": 18,
+					"id": 21,
 					"name": "__doc",
 					"kind": 2048,
 					"kindString": "Method",
@@ -132,14 +132,14 @@
 					],
 					"signatures": [
 						{
-							"id": 19,
+							"id": 22,
 							"name": "__doc",
 							"kind": 4096,
 							"kindString": "Call signature",
 							"flags": {},
 							"parameters": [
 								{
-									"id": 20,
+									"id": 23,
 									"name": "projectName",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -168,7 +168,7 @@
 					}
 				},
 				{
-					"id": 16,
+					"id": 19,
 					"name": "__getBasePath",
 					"kind": 2048,
 					"kindString": "Method",
@@ -182,7 +182,7 @@
 					],
 					"signatures": [
 						{
-							"id": 17,
+							"id": 20,
 							"name": "__getBasePath",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -213,7 +213,7 @@
 					"sources": [
 						{
 							"fileName": "index.ts",
-							"line": 25,
+							"line": 22,
 							"character": 21
 						}
 					],
@@ -225,7 +225,7 @@
 							"kindString": "Call signature",
 							"flags": {},
 							"comment": {
-								"shortText": "部署",
+								"shortText": " 部署",
 								"returns": "\n"
 							},
 							"parameters": [
@@ -256,7 +256,7 @@
 					]
 				},
 				{
-					"id": 11,
+					"id": 14,
 					"name": "help",
 					"kind": 2048,
 					"kindString": "Method",
@@ -266,13 +266,13 @@
 					"sources": [
 						{
 							"fileName": "index.ts",
-							"line": 114,
+							"line": 99,
 							"character": 19
 						}
 					],
 					"signatures": [
 						{
-							"id": 12,
+							"id": 15,
 							"name": "help",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -296,6 +296,59 @@
 				},
 				{
 					"id": 8,
+					"name": "remove",
+					"kind": 2048,
+					"kindString": "Method",
+					"flags": {
+						"isPublic": true
+					},
+					"sources": [
+						{
+							"fileName": "index.ts",
+							"line": 59,
+							"character": 21
+						}
+					],
+					"signatures": [
+						{
+							"id": 9,
+							"name": "remove",
+							"kind": 4096,
+							"kindString": "Call signature",
+							"flags": {},
+							"comment": {
+								"shortText": "移除",
+								"returns": "\n"
+							},
+							"parameters": [
+								{
+									"id": 10,
+									"name": "inputs",
+									"kind": 32768,
+									"kindString": "Parameter",
+									"flags": {},
+									"comment": {},
+									"type": {
+										"type": "reference",
+										"name": "InputProps"
+									}
+								}
+							],
+							"type": {
+								"type": "reference",
+								"typeArguments": [
+									{
+										"type": "intrinsic",
+										"name": "any"
+									}
+								],
+								"name": "Promise"
+							}
+						}
+					]
+				},
+				{
+					"id": 11,
 					"name": "test",
 					"kind": 2048,
 					"kindString": "Method",
@@ -305,13 +358,13 @@
 					"sources": [
 						{
 							"fileName": "index.ts",
-							"line": 78,
+							"line": 89,
 							"character": 19
 						}
 					],
 					"signatures": [
 						{
-							"id": 9,
+							"id": 12,
 							"name": "test",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -321,7 +374,7 @@
 							},
 							"parameters": [
 								{
-									"id": 10,
+									"id": 13,
 									"name": "inputs",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -358,27 +411,28 @@
 					"title": "Properties",
 					"kind": 1024,
 					"children": [
-						14,
-						15,
-						13
+						17,
+						18,
+						16
 					]
 				},
 				{
 					"title": "Methods",
 					"kind": 2048,
 					"children": [
-						18,
-						16,
+						21,
+						19,
 						5,
-						11,
-						8
+						14,
+						8,
+						11
 					]
 				}
 			],
 			"sources": [
 				{
 					"fileName": "index.ts",
-					"line": 15,
+					"line": 12,
 					"character": 34
 				}
 			],

@@ -1,6 +1,6 @@
-import { ICredentials } from '../interface/profile';
-import Function from './function';
-import { Trigger } from './trigger';
+import { ICredentials } from "../interface/profile";
+import Function from "./function";
+import { Trigger } from "./trigger";
 export default class deploy {
     functionClient: Function;
     triggerClient: Trigger;

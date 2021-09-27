@@ -126,9 +126,10 @@ export default class Function {
     const vm = core.spinner("Function configuration updating...");
     let body = new UpdateFunctionConfigRequestBody(this.functionInfo);
 
+    const func_urn = await this.getFunctionUrn(client);
     const response = await Client.fgClient.updateFunctionConfig(
       new UpdateFunctionConfigRequest()
-        .withFunctionUrn(await this.getFunctionUrn(client))
+        .withFunctionUrn(func_urn)
         .withBody(body)
     );
 
@@ -188,7 +189,14 @@ export default class Function {
    * @return 调用结果
    */
   public async remove(client: FunctionGraphClient) {
+    const vmExistance = core.spinner("Checking if function exists...");
     const func_urn = await this.getFunctionUrn(client);
+    if(!func_urn){
+      vmExistance.fail(`Function does not exist.`);
+      logger.log("Check your functionName or functionUrn.\nYou can get them in https://console.huaweicloud.com/functiongraph/#/serverless/functionList", "red");
+      return;
+    }
+    vmExistance.succeed("Function exists.");
     const vm = core.spinner(
       `Function ${this.functionInfo.func_name} deleting...`
     );
@@ -207,10 +215,6 @@ export default class Function {
     }
     return response;
   }
-
-  /**
-   * 一些衍生方法
-   */
 
   /**
    *  检查函数是否已经存在
@@ -245,10 +249,10 @@ export default class Function {
     const functions = await this.list(client);
     const targetFunctionName = this.getFunctionName();
     const targetFunction = functions.find((func) => {
-      func.func_name === targetFunctionName;
+      return func.func_name === targetFunctionName;
     });
     if (targetFunction) {
-      this.functionUrn = targetFunction.func;
+      this.functionUrn = targetFunction.func_urn;
       logger.debug(`functionUrn: ${this.functionUrn}`);
       return targetFunction.func_urn;
     } else {
@@ -282,6 +286,7 @@ export default class Function {
       "log_stream_id",
       "log_group_id ",
       "long_time",
+      "image_name"
     ];
     for (let i of Object.keys(response)) {
       if (noNeedKeys.indexOf(i) < 0 && response[i]) {

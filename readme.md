@@ -14,7 +14,7 @@ $ cd cfc/example
 $ s deploy
 ```
 
-为了让您更好地体验阿里云函数计算组件，您可以参考[快速入门文档](./docs/Getting-started/Hello-world-application.md)
+为了让您更好地体验华为云函数计算组件，您可以参考[快速入门文档](./docs/Getting-started/Hello-world-application.md)
 
 ## 文档目录
 
@@ -28,7 +28,7 @@ $ s deploy
 
 ## 更多案例
 
-[start-cfc](https://github.com/xinwuyun/start-fg)
+[start-fg](https://github.com/xinwuyun/start-fg)
 
 ## 问题反馈
 
@@ -39,4 +39,4 @@ $ s deploy
 + [x] 完成`trigger.ts`
 + [x] 完成`deploy.ts`
 + [x] 完成`remove.ts`
-+ [ ] 需要更友好的错误输出
++ [x] 需要更友好的错误输出

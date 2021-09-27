@@ -8,62 +8,10 @@ export interface TriggerInputProps {
     status: string;
     functionUrn?: string;
 }
-export declare abstract class Trigger {
-    triggerId?: string;
+export interface LocalTriggerInfo {
+    triggerId: string;
     triggerTypeCode: string;
-    eventTypeCode: string;
-    status: string;
-    functionUrn?: string;
-    constructor(input: TriggerInputProps);
-    abstract getEventData(): object;
-    /**
-     * 创建触发器
-     * @param client FunctionGraphClient
-     * @param functionUrn 函数代号
-     * @returns
-     */
-    create(client: FunctionGraphClient): Promise<any>;
-    /**
-     * 获取触发器列表
-     * @param client
-     * @param functionUrn
-     * @returns
-     */
-    list(client: FunctionGraphClient): Promise<Array<any>>;
-    /**
-     * 更新触发器
-     * @param Client
-     * @param functionUrn
-     * @returns
-     */
-    private update;
-    /**
-     * 删除触发器
-     * @param client
-     */
-    remove(client: FunctionGraphClient): Promise<any>;
-    /**
-     * 设置triggerId,某些业务（目前仅更新需要调用
-     * ））中需要调用该方法
-     * 先获得本地triggerId
-     * 再调用templateMethod获得可能的triggerId
-     * @returns
-     */
-    setTriggerId(): Promise<any>;
-    /**
-     * 虚函数，每个触发器根据信息获取触发器
-     * @param client
-     */
-    abstract getTriggerId(client: FunctionGraphClient): Promise<string>;
-    /**
-     * 处理返回
-     * @param response
-     * @returns
-     */
-    handleResponse(response: any): {
-        header: string;
-        content: any[];
-    }[];
+    functionUrn: string;
 }
 interface SMNEventData {
     topicUrn: string;
@@ -88,23 +36,11 @@ interface KAFKAEventData {
     db_password: string;
     batch_size: number;
 }
-export declare class TriggerSMN extends Trigger {
-    eventData: SMNEventData;
-    constructor(input: TriggerInputProps, eventData: SMNEventData);
-    getEventData(): object;
-    getTriggerId(client: FunctionGraphClient): Promise<string>;
-}
 interface DISEventData {
     streamName: string;
     sharditeratorType: string;
     batchSize?: number;
     pollingInterval?: number;
-}
-export declare class TriggerDIS extends Trigger {
-    eventData: DISEventData;
-    constructor(input: TriggerInputProps, eventData: DISEventData);
-    getEventData(): object;
-    getTriggerId(client: FunctionGraphClient): Promise<string>;
 }
 interface APIGEventData {
     groupId: string;
@@ -120,11 +56,9 @@ interface APIGEventData {
     slDomain: string;
     instanceId: string;
 }
-export declare class TriggerAPIG extends Trigger {
-    eventData: APIGEventData;
-    constructor(input: TriggerInputProps, eventData: APIGEventData);
-    getEventData(): object;
-    getTriggerId(client: FunctionGraphClient): Promise<string>;
+interface LTSEventData {
+    groupId: string;
+    topicId: string;
 }
 interface TIMEREventData {
     name: string;
@@ -132,15 +66,106 @@ interface TIMEREventData {
     schedule: string;
     userEvent?: string;
 }
+interface OBSEventData {
+    bucket: string;
+    events: Array<string>;
+    prefix?: string;
+    suffix?: string;
+}
+interface OBSEventData {
+    bucket: string;
+    events: Array<string>;
+    prefix?: string;
+    suffix?: string;
+}
+export declare abstract class Trigger {
+    triggerId?: string;
+    triggerTypeCode: string;
+    eventTypeCode: string;
+    status: string;
+    functionUrn?: string;
+    constructor(input: TriggerInputProps);
+    abstract getEventData(): object;
+    /**
+     * 创建触发器
+     * @param client {FunctionGraphClient}
+     * @returns res {Object} 函数信息
+     * @returns functionUrn {string} 函数Urn
+     */
+    create(client: FunctionGraphClient): Promise<any>;
+    /**
+     * 获取触发器列表
+     * @param client
+     * @returns triggers {Array<any>} 该函数下的所有函数信息
+     */
+    list(client: FunctionGraphClient): Promise<Array<any>>;
+    /**
+     * 更新触发器，只能更新status
+     * @param Client
+     * @param functionUrn
+     * @returns
+     */
+    update(client: FunctionGraphClient): Promise<any>;
+    /**
+     * 删除触发器
+     * @param client
+     */
+    remove(client: FunctionGraphClient): Promise<any>;
+    /**
+     * 设置triggerId,某些业务（目前仅更新需要调用
+     * 中需要调用该方法)
+     * 先获得本地triggerId
+     * 再调用templateMethod获得可能的triggerId
+     * @returns
+     */
+    setTriggerId(triggerId?: string): Promise<void>;
+    /**
+     * 设置本地触发器信息
+     */
+    setLocalTriggerInfo(localTriggerInfo: LocalTriggerInfo): Promise<void>;
+    /**
+     * 获取本地触发器信息
+     */
+    getLocalTriggerInfo(): Promise<LocalTriggerInfo>;
+    /**
+     * 暂时不使用
+     * 虚函数，每个触发器根据信息获取触发器ID
+     * @param client
+     */
+    abstract getTriggerId(client: FunctionGraphClient): Promise<string>;
+    /**
+     * 处理返回
+     * @param response
+     * @returns
+     */
+    handleResponse(response: any): {
+        header: string;
+        content: any[];
+    }[];
+}
+export declare class TriggerSMN extends Trigger {
+    eventData: SMNEventData;
+    constructor(input: TriggerInputProps, eventData: SMNEventData);
+    getEventData(): object;
+    getTriggerId(client: FunctionGraphClient): Promise<string>;
+}
+export declare class TriggerDIS extends Trigger {
+    eventData: DISEventData;
+    constructor(input: TriggerInputProps, eventData: DISEventData);
+    getEventData(): object;
+    getTriggerId(client: FunctionGraphClient): Promise<string>;
+}
+export declare class TriggerAPIG extends Trigger {
+    eventData: APIGEventData;
+    constructor(input: TriggerInputProps, eventData: APIGEventData);
+    getEventData(): object;
+    getTriggerId(client: FunctionGraphClient): Promise<string>;
+}
 export declare class TriggerTIMER extends Trigger {
     eventData: TIMEREventData;
     constructor(input: TriggerInputProps, eventData: TIMEREventData);
     getEventData(): object;
     getTriggerId(client: FunctionGraphClient): Promise<string>;
-}
-interface LTSEventData {
-    groupId: string;
-    topicId: string;
 }
 export declare class TriggerLTS extends Trigger {
     eventData: LTSEventData;
@@ -148,23 +173,11 @@ export declare class TriggerLTS extends Trigger {
     getEventData(): object;
     getTriggerId(client: FunctionGraphClient): Promise<string>;
 }
-interface OBSEventData {
-    bucket: string;
-    events: Array<string>;
-    prefix?: string;
-    suffix?: string;
-}
 export declare class TriggerOBS extends Trigger {
     eventData: OBSEventData;
     constructor(input: TriggerInputProps, eventData: OBSEventData);
     getEventData(): object;
     getTriggerId(client: FunctionGraphClient): Promise<string>;
-}
-interface OBSEventData {
-    bucket: string;
-    events: Array<string>;
-    prefix?: string;
-    suffix?: string;
 }
 export declare class TriggerCTS extends Trigger {
     eventData: CTSEventData;
@@ -184,5 +197,11 @@ export declare class TriggerKAFKA extends Trigger {
     getEventData(): object;
     getTriggerId(client: FunctionGraphClient): Promise<any>;
 }
-export declare function getTriggerClient(props: any, functionUrn?: string): Trigger;
+export declare class TriggerClientFactory {
+    triggerInputProps: TriggerInputProps;
+    eventData: any;
+    constructor(props: any, functionUrn?: string);
+    setFunctionUrn(functionUrn: string): void;
+    create(): Trigger;
+}
 export {};

@@ -1,4 +1,4 @@
-import { UpdateFunctionRequestBody } from './UpdateFunctionRequestBody';
+import { UpdateFunctionRequestBody } from "./UpdateFunctionRequestBody";
 export declare class UpdateFunctionRequest {
     func_urn?: string;
     body?: UpdateFunctionRequestBody;

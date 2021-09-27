@@ -90,7 +90,7 @@ export default class Remove {
     const credentials: ICredentials = inputs.credentials;
     await StdoutFormatter.initStdout();
     logger.info(
-      StdoutFormatter.stdoutFormatter.using("access alias", inputs.access)
+      StdoutFormatter.stdoutFormatter.using("access alias", inputs.credentials.Alias)
     );
     logger.info(
       StdoutFormatter.stdoutFormatter.using(

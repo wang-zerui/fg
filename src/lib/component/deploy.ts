@@ -30,9 +30,12 @@ export default class deploy {
 
     const parsedData = parsedArgs?.data || {};
     const rawData = parsedData._ || [];
+    if(!inputs.credentials.AccessKeyID || !inputs.credentials.SecretAccessKey){
+      throw new Error("Havn't set huaweicloud credentials. Run $s config add .");
+    }
     await StdoutFormatter.initStdout();
     logger.info(
-      StdoutFormatter.stdoutFormatter.using("access alias", inputs.access)
+      StdoutFormatter.stdoutFormatter.using("access alias", inputs.credentials.Alias)
     );
     logger.info(
       StdoutFormatter.stdoutFormatter.using(
@@ -165,6 +168,9 @@ export default class deploy {
 
       if (props.trigger) {
         triggerInfo = await this.deployTrigger(props, functionUrn);
+        if(!triggerInfo){
+          return functionInfo.res;
+        }
         return functionInfo.res.concat(triggerInfo);
       } else {
         if (!functionInfo.res) {
