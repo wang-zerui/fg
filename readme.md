@@ -40,3 +40,4 @@ $ s deploy
 + [x] 完成`deploy.ts`
 + [x] 完成`remove.ts`
 + [x] 需要更友好的错误输出
++ [ ] 需要完善triggerFactory，使eventData的输入更加贴近控制台

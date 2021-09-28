@@ -34,7 +34,6 @@ export interface TriggerInputProps {
 
 export interface LocalTriggerInfo {
   triggerId: string;
-  triggerTypeCode: string;
   functionUrn: string;
 }
 
@@ -191,10 +190,9 @@ export abstract class Trigger {
       vm.succeed(`New trigger.`);
       const vm1 = core.spinner("Creating trigger...");
       const triggerId = response.data.trigger_id;
-      const triggerTypeCode = this.triggerTypeCode;
       const functionUrn = this.functionUrn;
       logger.debug(`triggerId:${triggerId}`);
-      await this.setLocalTriggerInfo({triggerId, triggerTypeCode, functionUrn});
+      await this.setLocalTriggerInfo({triggerId, functionUrn});
       vm1.succeed("Creating trigger successfully.");
       return this.handleResponse(response.data);
     }
@@ -263,7 +261,6 @@ export abstract class Trigger {
     if (!this.triggerId) {
       const localTriggerInfo = await this.getLocalTriggerInfo();
       triggerId = localTriggerInfo.triggerId;
-      triggerTypeCode = localTriggerInfo.triggerTypeCode;
       functionUrn = localTriggerInfo.functionUrn;
       // 如果没有本地记录直接返回
       if(!triggerId) {
@@ -344,10 +341,16 @@ export abstract class Trigger {
     ];
     let eventDataInfo = [];
     for (let key of Object.keys(response.event_data)) {
-      eventDataInfo.push({
-        desc: key,
-        example: response.event_data[key],
-      });
+      const desc = key;
+      let example = response.event_data[key];
+      if(typeof(example) === "string") {
+        // example = JSON.stringify(example);
+        eventDataInfo.push({
+          desc,
+          example,
+        });
+      }
+      
     }
     return [
       {

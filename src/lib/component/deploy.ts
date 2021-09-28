@@ -163,7 +163,7 @@ export default class deploy {
 
       if (props.function) {
         functionInfo = await this.deployFunction(props);
-        functionUrn = props.trigger.functionUrn || functionInfo.functionUrn;
+        functionUrn = functionInfo.functionUrn;
       }
 
       if (props.trigger) {
