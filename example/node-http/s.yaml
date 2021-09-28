@@ -18,11 +18,19 @@ services:
         code:
           codeUri: ./
       trigger:
-        triggerTypeCode: TIMER
-        eventTypeCode: MessageCreated
-        status: DISABLED
+        triggerTypeCode: APIG
+        eventTypeCode: APICreated
+        status: ACTIVE
         eventData:
-          name: Timeer-fbb8
-          schedule: 3m
-          schedule_type: Rate
-          user_event: ""
+          group_id: 51ed66ba137d43afaf24c8281114ff4a
+          env_name: Environment_rjmt
+          env_id: a36de477aa3c4388b7bce759b32e0d8a
+          auth: IAM
+          protocol: HTTPS
+          name: testt
+          path: /fg-http-nodejsss
+          match_mode: SWA
+          req_method: GET
+          backend_type: FUNCTION
+          type: 1
+          sl_domain: 51ed66ba137d43afaf24c8281114ff4a.apig.cn-north-4.huaweicloudapis.com
