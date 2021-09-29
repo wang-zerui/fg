@@ -16,16 +16,16 @@ services:
         package: default
         codeType: zip
         code:
-          codeUri: ./
+          codeUri: ./src
       trigger:
         triggerTypeCode: APIG
         eventTypeCode: APICreated
         status: ACTIVE
         eventData:
           group_id: 51ed66ba137d43afaf24c8281114ff4a
-          env_name: Environment_rjmt
-          env_id: a36de477aa3c4388b7bce759b32e0d8a
-          auth: IAM
+          env_name: RELEASE
+          env_id: DEFAULT_ENVIRONMENT_RELEASE_ID
+          auth: NONE
           protocol: HTTPS
           name: testt
           path: /fg-http-nodejsss

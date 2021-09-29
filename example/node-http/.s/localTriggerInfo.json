@@ -1,4 +1,5 @@
 {
-  "triggerId": "bcd127a95d2148499686035902fde672",
-  "functionUrn": "urn:fss:cn-north-4:0bcc05efb100f2a92f53c011f262dfa0:function:default:wzr-fg-test-2021-9-27-1"
+  "triggerId": "57d8f4eefad646c1bc8902861474af68",
+  "triggerTypeCode": "APIG",
+  "functionUrn": "urn:fss:cn-north-4:0bcc05efb100f2a92f53c011f262dfa0:function:default:wzr-fg-test-2021-9-27-1:latest"
 }
