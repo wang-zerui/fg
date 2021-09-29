@@ -115,7 +115,7 @@ export default class deploy {
       await this.functionClient.updateConfig(this.client);
       return await this.functionClient.updateCode(
         this.client,
-        props.function.codeUri
+        props.function.code.codeUri
       );
     } else {
       vm1.succeed(`Function ${functionName} does not exitst.`);
