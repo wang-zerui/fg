@@ -121,7 +121,7 @@ export default class deploy {
       vm1.succeed(`Function ${functionName} does not exitst.`);
       return await this.functionClient.create(
         this.client,
-        props.function.codeUri
+        props.function.code.codeUri
       );
     }
   }
