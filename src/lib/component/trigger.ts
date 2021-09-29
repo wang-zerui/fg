@@ -34,6 +34,7 @@ export interface TriggerInputProps {
 
 export interface LocalTriggerInfo {
   triggerId: string;
+  triggerTypeCode: string;
   functionUrn: string;
 }
 
@@ -190,9 +191,10 @@ export abstract class Trigger {
       vm.succeed(`New trigger.`);
       const vm1 = core.spinner("Creating trigger...");
       const triggerId = response.data.trigger_id;
+      const triggerTypeCode = response.data.trigger_type_code;
       const functionUrn = this.functionUrn;
       logger.debug(`triggerId:${triggerId}`);
-      await this.setLocalTriggerInfo({triggerId, functionUrn});
+      await this.setLocalTriggerInfo({triggerId, triggerTypeCode, functionUrn});
       vm1.succeed("Creating trigger successfully.");
       return this.handleResponse(response.data);
     }
@@ -258,20 +260,21 @@ export abstract class Trigger {
     let triggerId: string;
     let triggerTypeCode: string;
     let functionUrn = this.functionUrn;
+    const vm = core.spinner("Deleting trigger...");
     if (!this.triggerId) {
       const localTriggerInfo = await this.getLocalTriggerInfo();
       triggerId = localTriggerInfo.triggerId;
+      triggerTypeCode = localTriggerInfo.triggerTypeCode;
       functionUrn = localTriggerInfo.functionUrn;
+      logger.debug(localTriggerInfo);
       // 如果没有本地记录直接返回
       if(!triggerId) {
-        logger.error("Delete nothing. No trigger created before.")
+        vm.fail("Failed to delete trigger, not trigger found local.");
         return;
       }
-      logger.info("Deleteing trigger created before.");
     } else {
       triggerId = this.triggerId;
       triggerTypeCode = triggerTypeCode;
-      logger.info("Deleteing trigger indicated in s.yaml");
     }
     const deleteTriggerRequest = new DeleteTriggerRequest()
       .withFunctionUrn(functionUrn)
@@ -279,9 +282,10 @@ export abstract class Trigger {
       .withTriggerTypeCode(triggerTypeCode);
     const response = await client.deleteTrigger(deleteTriggerRequest);
     if (response.status !== 200) {
-      // TODO:需要更有好的错误输出
+      vm.fail("Failed to delete trigger, not trigger found local.");
       logger.error("Deleting trigger failed, error message: " + JSON.stringify(response.data));
     } else {
+      vm.succeed("Trigger deleted.")
       return response.data;
     }
   }

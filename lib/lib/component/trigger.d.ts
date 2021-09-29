@@ -10,6 +10,7 @@ export interface TriggerInputProps {
 }
 export interface LocalTriggerInfo {
     triggerId: string;
+    triggerTypeCode: string;
     functionUrn: string;
 }
 interface SMNEventData {
