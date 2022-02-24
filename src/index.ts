@@ -31,7 +31,7 @@ export default class ComponentDemo extends BaseComponent {
       errorMessage,
     } = await Deploy.handleInputs(inputs);
     await reportComponent(
-      "cfc",
+      "fg",
       subCommand ? `deploy &(subCommand)` : "deploy"
     );
 

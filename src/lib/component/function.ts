@@ -3,8 +3,8 @@ import Client from "../client";
 import { startZip, tableShow, deleteZip } from "../utils";
 import logger from "../../common/logger";
 import { FunctionInputProps } from "./functionGraph/model/CreateFunctionRequestBody";
-import { CreateFunctionRequest } from "./functionGraph/model/CreateFunctionRequest";
-import { CreateFunctionRequestBody } from "./functionGraph/model/CreateFunctionRequestBody";
+import { CreateFunctionRequest } from '@huaweicloud/huaweicloud-sdk-functiongraph';
+import { CreateFunctionRequestBody, CreateFunctionRequestBodyRuntimeEnum, CreateFunctionRequestBodyCodeTypeEnum, FuncCode } from '@huaweicloud/huaweicloud-sdk-functiongraph';
 // import { FUNCTION_INFO_KEYS } from './functionGraph/model/FunctionInfo'
 import { UpdateFunctionConfigRequestBody } from "./functionGraph/model/UpdateFunctionConfigRequestBody";
 import { UpdateFunctionRequestBody } from "./functionGraph/model/UpdateFunctionRequestBody";
@@ -29,8 +29,7 @@ export default class Function {
     functionInfo.handler = functionInfo.handler || CONFIGS.handler;
     functionInfo.memory_size = functionInfo.memory_size || CONFIGS.memorySize;
     functionInfo.timeout = functionInfo.timeout || CONFIGS.timeout;
-    functionInfo.runtime =
-      functionInfo.runtime || CONFIGS.handler(functionInfo.runtime);
+    functionInfo.runtime = CONFIGS.runtime(functionInfo.runtime, logger);
     functionInfo.pkg = functionInfo.pkg || CONFIGS.pkg;
     functionInfo.code_type = functionInfo.code_type || CONFIGS.codeType;
     return functionInfo;
@@ -46,32 +45,38 @@ export default class Function {
   public async create(client: FunctionGraphClient, codeUri?: string) {
     logger.debug("调用CreateFunction");
 
+    // 压缩代码
     const vm1 = core.spinner("File compressing...");
     const ZipFile = await startZip(codeUri || "./");
     await deleteZip("hello.zip");
     vm1.succeed("File compression completed");
 
-    const body = new CreateFunctionRequestBody(
-      this.functionInfo
-    ).withFunctionCode(ZipFile);
+    const body = new CreateFunctionRequestBody()
+      .withFuncName(this.functionInfo.func_name)
+      .withHandler(this.functionInfo.handler)
+      .withMemorySize(this.functionInfo.memory_size)
+      .withTimeout(this.functionInfo.timeout)
+      .withRuntime(CreateFunctionRequestBodyRuntimeEnum.NODE_JS8_10)
+      .withPackage(this.functionInfo.pkg)
+      .withCodeType(CreateFunctionRequestBodyCodeTypeEnum.ZIP)
+      .withFuncCode(new FuncCode().withFile(ZipFile)) 
+
     logger.debug(JSON.stringify(body));
 
-    const vm = core.spinner(
-      `Function ${this.functionInfo.func_name} creating.`
-    );
-    const response = await Client.fgClient.createFunction(
-      new CreateFunctionRequest().withBody(body)
-    );
-
-    if (response.status === 200) {
-      vm.succeed(`Function ${this.functionInfo.func_name} created.`);
-      logger.debug(`返回结果，${JSON.stringify(response.data)}`);
-    } else {
-      vm.fail(`Function ${this.functionInfo.func_name} creating failed.`);
-      // TODO:使用更友好的错误返回
-      // 错误码说明 https://support.huaweicloud.com/api-functiongraph/ErrorCode.html
-      throw new Error(JSON.stringify(response.data));
-    }
+    const vm = core.spinner(`Function ${this.functionInfo.func_name} creating.`);
+    let response:any;
+    Client.fgClient.createFunction(new CreateFunctionRequest().withBody(body))
+      .then((result: any)=>{
+        vm.succeed(`Function ${this.functionInfo.func_name} created.`);
+        logger.debug(`返回结果，${JSON.stringify(response.data)}`);
+        response = result;
+      })
+      .catch((ex: any) => {
+        vm.fail(`CreatingFunction API call failed.`);
+        // TODO:使用更友好的错误返回
+        // 错误码说明 https://support.huaweicloud.com/api-functiongraph/ErrorCode.html
+        throw new Error(JSON.stringify(response.data));
+      })
 
     return this.handleResponse(response.data);
   }

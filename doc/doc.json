@@ -1,7 +1,7 @@
 {
 	"id": 0,
 	"name": "fg",
-	"kind": 0,
+	"kind": 1,
 	"kindString": "Project",
 	"flags": {},
 	"originalName": "",
@@ -19,6 +19,13 @@
 					"kind": 512,
 					"kindString": "Constructor",
 					"flags": {},
+					"sources": [
+						{
+							"fileName": "index.ts",
+							"line": 13,
+							"character": 2
+						}
+					],
 					"signatures": [
 						{
 							"id": 3,
@@ -67,7 +74,7 @@
 						{
 							"fileName": "common/base.ts",
 							"line": 7,
-							"character": 18
+							"character": 12
 						}
 					],
 					"type": {
@@ -109,7 +116,7 @@
 						{
 							"fileName": "index.ts",
 							"line": 107,
-							"character": 9
+							"character": 2
 						}
 					],
 					"type": {
@@ -127,7 +134,7 @@
 						{
 							"fileName": "common/base.ts",
 							"line": 32,
-							"character": 7
+							"character": 2
 						}
 					],
 					"signatures": [
@@ -177,7 +184,7 @@
 						{
 							"fileName": "common/base.ts",
 							"line": 19,
-							"character": 15
+							"character": 2
 						}
 					],
 					"signatures": [
@@ -214,7 +221,7 @@
 						{
 							"fileName": "index.ts",
 							"line": 22,
-							"character": 21
+							"character": 15
 						}
 					],
 					"signatures": [
@@ -250,6 +257,8 @@
 										"name": "any"
 									}
 								],
+								"qualifiedName": "Promise",
+								"package": "typescript",
 								"name": "Promise"
 							}
 						}
@@ -267,7 +276,7 @@
 						{
 							"fileName": "index.ts",
 							"line": 99,
-							"character": 19
+							"character": 15
 						}
 					],
 					"signatures": [
@@ -289,6 +298,8 @@
 										"name": "void"
 									}
 								],
+								"qualifiedName": "Promise",
+								"package": "typescript",
 								"name": "Promise"
 							}
 						}
@@ -306,7 +317,7 @@
 						{
 							"fileName": "index.ts",
 							"line": 59,
-							"character": 21
+							"character": 15
 						}
 					],
 					"signatures": [
@@ -342,6 +353,8 @@
 										"name": "any"
 									}
 								],
+								"qualifiedName": "Promise",
+								"package": "typescript",
 								"name": "Promise"
 							}
 						}
@@ -359,7 +372,7 @@
 						{
 							"fileName": "index.ts",
 							"line": 89,
-							"character": 19
+							"character": 15
 						}
 					],
 					"signatures": [
@@ -393,6 +406,8 @@
 										"name": "any"
 									}
 								],
+								"qualifiedName": "Promise",
+								"package": "typescript",
 								"name": "Promise"
 							}
 						}
@@ -433,13 +448,13 @@
 				{
 					"fileName": "index.ts",
 					"line": 12,
-					"character": 34
+					"character": 21
 				}
 			],
 			"extendedTypes": [
 				{
 					"type": "reference",
-					"name": "BaseComponent"
+					"name": "default"
 				}
 			]
 		}

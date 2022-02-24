@@ -1,5 +1,20 @@
 declare const LANGS: string[];
 declare const getLang: (runtime: any) => string;
+declare const RUNTIMES: {
+    "Python2.7": string;
+    "Python3.6": string;
+    "Go1.8": string;
+    Java8: string;
+    "Node.js6.10": string;
+    "Node.js8.10": string;
+    "Node.js10.16": string;
+    "Node.js12.13": string;
+    "C#(.NET Core 2.0)": string;
+    "C#(.NET Core 2.1)": string;
+    "C#(.NET Core 3.1)": string;
+    Custom: string;
+    "PHP7.3": string;
+};
 declare const CONFIGS: {
     compName: string;
     compFullname: string;
@@ -8,6 +23,7 @@ declare const CONFIGS: {
     codeUri: string;
     timeout: number;
     memorySize: number;
+    runtime(runtime: string, logger: any): any;
     description(app?: string): string;
     codeType: string;
     pkg: string;

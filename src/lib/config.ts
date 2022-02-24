@@ -16,6 +16,21 @@ const getLang = (runtime) => {
   }
   return "nodejs";
 };
+const RUNTIMES = {
+  "Python2.7" : "PYTHON2_7",
+  "Python3.6" : "PYTHON3_6",
+  "Go1.8" : "GO1_8",
+  "Java8" : "JAVA8",
+  "Node.js6.10" : "NODE_JS6_10",
+  "Node.js8.10" : "NODE_JS8_10",
+  "Node.js10.16" : "NODE_JS8_10",
+  "Node.js12.13" : "NODE_JS8_10",
+  "C#(.NET Core 2.0)" : "C__NET_CORE_2_0",
+  "C#(.NET Core 2.1)" : "C__NET_CORE_2_1",
+  "C#(.NET Core 3.1)" : "C__NET_CORE_3_1",
+  "Custom": "CUSTOM",
+  "PHP7.3":"PHP7_3" 
+}
 const CONFIGS = {
   compName: "fg",
   compFullname: "FunctionGraph",
@@ -24,6 +39,17 @@ const CONFIGS = {
   codeUri: "./",
   timeout: 3,
   memorySize: 128,
+  runtime(runtime: string, logger: any) {
+    const CurrentlyNotSupportRuntimes = ['Nodejs12.13', 'Nodejs10.16'];
+    if(runtime in CurrentlyNotSupportRuntimes){
+      logger.warning('Not supported runtime in this sdk, will be supported in the future. Using "Nodejs8.10" this time. https://github.com/huaweicloud/huaweicloud-sdk-nodejs-v3/issues/5');
+    }
+    if(RUNTIMES[runtime] === undefined){
+      logger.error("Unknown runtime.");
+      
+    }
+    return RUNTIMES[runtime];
+  },
   description(app: string = "serverless devs") {
     return `This is a function in ${app} application`;
   },
