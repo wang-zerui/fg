@@ -30,7 +30,7 @@ export interface FunctionInputProps {
   xrole?: string;
   app_xrole?: string;
   initializer_handler?: string;
-  initializer_timeout?: string;
+  initializer_timeout?: number;
   func_urn?: string;
 }
 export class CreateFunctionRequestBody {
@@ -48,7 +48,7 @@ export class CreateFunctionRequestBody {
   public xrole?: string;
   public app_xrole?: string;
   public initializer_handler?: string;
-  public initializer_timeout?: string;
+  public initializer_timeout?: number;
   public constructor(input: FunctionInputProps) {
     this["func_name"] = input.func_name;
     this["handler"] = input.handler;
@@ -119,7 +119,7 @@ export class CreateFunctionRequestBody {
     return this;
   }
   public withInitializerTimeout(
-    initializer_timeout: string
+    initializer_timeout: number
   ): CreateFunctionRequestBody {
     this["initializer_timeout"] = initializer_timeout;
     return this;

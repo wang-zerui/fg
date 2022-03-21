@@ -2,7 +2,7 @@ const { HLogger } = require("@serverless-devs/core");
 
 export default class ComponentLogger {
   @HLogger("S-CORE") static logger;
-  static CONTENT = "CFC";
+  static CONTENT = "FG";
   static setContent(content) {
     ComponentLogger.CONTENT = content;
   }

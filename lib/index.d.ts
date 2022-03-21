@@ -23,8 +23,4 @@ export default class ComponentDemo extends BaseComponent {
      * @returns
      */
     help(): Promise<void>;
-    /**
-     * 解析入参
-     */
-    private: any;
 }

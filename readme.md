@@ -10,7 +10,7 @@
 
 ```shell
 $ git clone https://github.com/xinwuyun/fg
-$ cd cfc/example
+$ cd fg/example
 $ s deploy
 ```
 

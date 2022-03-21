@@ -43,9 +43,9 @@ export const COMPONENT_HELP_INFO = [
   {
     header: "Examples with Yaml",
     content: [
-      "$ cfc {bold deploy} --help",
-      "$ cfc {bold remove} --help",
-      "$ cfc {bold help}",
+      "$ fg {bold deploy} --help",
+      "$ fg {bold remove} --help",
+      "$ fg {bold help}",
     ],
   },
 ];

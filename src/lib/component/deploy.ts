@@ -112,17 +112,12 @@ export default class deploy {
     if (isCreated) {
       vm1.succeed(`Function ${functionName} is already online.`);
       await this.functionClient.getUrnByFunctionName(this.client);
-      await this.functionClient.updateConfig(this.client);
-      return await this.functionClient.updateCode(
-        this.client,
-        props.function.code.codeUri
-      );
+      const updateConfigResponse = await this.functionClient.updateConfig(this.client);
+      await this.functionClient.updateCode(props.function.code.codeUri);
+      return updateConfigResponse;
     } else {
       vm1.succeed(`Function ${functionName} does not exitst.`);
-      return await this.functionClient.create(
-        this.client,
-        props.function.code.codeUri
-      );
+      return await this.functionClient.create(props.function.code.codeUri);
     }
   }
 

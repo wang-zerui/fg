@@ -13,7 +13,7 @@ export interface FunctionInputProps {
     xrole?: string;
     app_xrole?: string;
     initializer_handler?: string;
-    initializer_timeout?: string;
+    initializer_timeout?: number;
     func_urn?: string;
 }
 export declare class CreateFunctionRequestBody {
@@ -31,7 +31,7 @@ export declare class CreateFunctionRequestBody {
     xrole?: string;
     app_xrole?: string;
     initializer_handler?: string;
-    initializer_timeout?: string;
+    initializer_timeout?: number;
     constructor(input: FunctionInputProps);
     withFunctionName(func_name: string): CreateFunctionRequestBody;
     withHandler(handler: string): CreateFunctionRequestBody;
@@ -45,6 +45,6 @@ export declare class CreateFunctionRequestBody {
     withEnterpriseProjectId(enterprise_project_id: string): CreateFunctionRequestBody;
     withAppXrole(app_xrole: string): CreateFunctionRequestBody;
     withInitializerHandler(initializer_handler: string): CreateFunctionRequestBody;
-    withInitializerTimeout(initializer_timeout: string): CreateFunctionRequestBody;
+    withInitializerTimeout(initializer_timeout: number): CreateFunctionRequestBody;
     withDescription(des: string): CreateFunctionRequestBody;
 }

@@ -7,12 +7,11 @@ export default class Function {
     private handleInput;
     /**
      *  创建云函数
-     * @param client {FunctionGraphClient}
      * @param codeUri {string} 函数代码路径
      * @returns res {Object} 函数信息
      * @returns functionBrn {string} 函数Urn
      */
-    create(client: FunctionGraphClient, codeUri?: string): Promise<{
+    create(codeUri?: string): Promise<{
         res: {
             header: string;
             content: any[];
@@ -21,7 +20,6 @@ export default class Function {
     }>;
     /**
      *  更新代码
-     * @param client {FunctionGraphClient}
      * @param codeUri {string} 代码路径
      * @returns res {object} 函数信息
      * @returns functionUrn {string} functionBrn
@@ -51,7 +49,7 @@ export default class Function {
      * @param table {boolean} 是否显示函数表
      * @retrun functions {Ayyay<any>} 函数列表信息,每一项对应一个函数,包含函数信息
      */
-    list(client: FunctionGraphClient, table?: boolean): Promise<Array<any>>;
+    list(table?: boolean): Promise<Array<any>>;
     /**
      *  删除函数(及其触发器)
      * @param client {FunctionGraphClinet}

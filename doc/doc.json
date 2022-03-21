@@ -63,7 +63,7 @@
 					}
 				},
 				{
-					"id": 17,
+					"id": 16,
 					"name": "client",
 					"kind": 1024,
 					"kindString": "Property",
@@ -87,7 +87,7 @@
 					}
 				},
 				{
-					"id": 18,
+					"id": 17,
 					"name": "inputs",
 					"kind": 1024,
 					"kindString": "Property",
@@ -104,28 +104,7 @@
 					}
 				},
 				{
-					"id": 16,
-					"name": "private",
-					"kind": 1024,
-					"kindString": "Property",
-					"flags": {},
-					"comment": {
-						"shortText": "解析入参"
-					},
-					"sources": [
-						{
-							"fileName": "index.ts",
-							"line": 107,
-							"character": 2
-						}
-					],
-					"type": {
-						"type": "intrinsic",
-						"name": "any"
-					}
-				},
-				{
-					"id": 21,
+					"id": 20,
 					"name": "__doc",
 					"kind": 2048,
 					"kindString": "Method",
@@ -139,14 +118,14 @@
 					],
 					"signatures": [
 						{
-							"id": 22,
+							"id": 21,
 							"name": "__doc",
 							"kind": 4096,
 							"kindString": "Call signature",
 							"flags": {},
 							"parameters": [
 								{
-									"id": 23,
+									"id": 22,
 									"name": "projectName",
 									"kind": 32768,
 									"kindString": "Parameter",
@@ -175,7 +154,7 @@
 					}
 				},
 				{
-					"id": 19,
+					"id": 18,
 					"name": "__getBasePath",
 					"kind": 2048,
 					"kindString": "Method",
@@ -189,7 +168,7 @@
 					],
 					"signatures": [
 						{
-							"id": 20,
+							"id": 19,
 							"name": "__getBasePath",
 							"kind": 4096,
 							"kindString": "Call signature",
@@ -275,7 +254,7 @@
 					"sources": [
 						{
 							"fileName": "index.ts",
-							"line": 99,
+							"line": 95,
 							"character": 15
 						}
 					],
@@ -316,7 +295,7 @@
 					"sources": [
 						{
 							"fileName": "index.ts",
-							"line": 59,
+							"line": 55,
 							"character": 15
 						}
 					],
@@ -371,7 +350,7 @@
 					"sources": [
 						{
 							"fileName": "index.ts",
-							"line": 89,
+							"line": 85,
 							"character": 15
 						}
 					],
@@ -426,17 +405,16 @@
 					"title": "Properties",
 					"kind": 1024,
 					"children": [
-						17,
-						18,
-						16
+						16,
+						17
 					]
 				},
 				{
 					"title": "Methods",
 					"kind": 2048,
 					"children": [
-						21,
-						19,
+						20,
+						18,
 						5,
 						14,
 						8,

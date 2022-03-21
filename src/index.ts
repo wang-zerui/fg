@@ -1,4 +1,4 @@
-import { getState, reportComponent } from "@serverless-devs/core";
+import { getState } from "@serverless-devs/core";
 import * as core from "@serverless-devs/core";
 import BaseComponent from "./common/base";
 import logger from "./common/logger";
@@ -30,10 +30,6 @@ export default class ComponentDemo extends BaseComponent {
       help,
       errorMessage,
     } = await Deploy.handleInputs(inputs);
-    await reportComponent(
-      "fg",
-      subCommand ? `deploy &(subCommand)` : "deploy"
-    );
 
     if (errorMessage) {
       throw new Error(errorMessage);
@@ -67,10 +63,10 @@ export default class ComponentDemo extends BaseComponent {
       help,
       errorMessage,
     } = await Remove.handleInputs(inputs);
-    await reportComponent(
-      "cfc",
-      subCommand ? `remove &(subCommand)` : "remove"
-    );
+    // await reportComponent(
+    //   "fg",
+    //   subCommand ? `remove &(subCommand)` : "remove"
+    // );
     if (errorMessage) {
       throw new Error(errorMessage);
     }
@@ -97,12 +93,11 @@ export default class ComponentDemo extends BaseComponent {
    * @returns
    */
   public async help(): Promise<void> {
-    await reportComponent("cfc", "help");
+    // await reportComponent("cfc", "help");
     core.help(COMPONENT_HELP_INFO);
   }
 
   /**
    * 解析入参
    */
-  private;
 }
