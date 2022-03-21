@@ -12,9 +12,9 @@ services:
         handler: index.handler
         memorySize: 128
         timeout: 30
-        runtime: Node.js8.10
+        runtime: NODE_JS8_10
         package: default
-        codeType: zip
+        codeType: ZIP
         code:
           codeUri: ./src
       trigger:
